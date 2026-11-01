@@ -1,0 +1,6 @@
+description: "Control: one column gone and one new of the same type could be a rename, so it is blocked."
+covers: [ambiguous]
+classes: [ambiguous]
+blocked: true
+says:
+  - "rename_column: {table: sc_control_rename_column.t, from: "

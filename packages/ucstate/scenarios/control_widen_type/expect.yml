@@ -1,0 +1,6 @@
+description: "Control: INT to BIGINT is widening, which is one-way, so without the property declared it is blocked."
+covers: [widen_type]
+classes: [one-way]
+blocked: true
+says:
+  - "needs type widening: declare 'delta.enableTypeWidening' = 'true'"

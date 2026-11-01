@@ -1,0 +1,9 @@
+description: Comments, tags and declared properties change on a schema, table, column and volume.
+covers: [metadata]
+classes: [auto]
+contains:
+  - COMMENT ON SCHEMA sc_metadata IS 'After'
+  - SET DBPROPERTIES ('team' = 'platform')
+  - ALTER COLUMN id COMMENT ''
+  - UNSET TAGS ('stale')
+  - "'delta.logRetentionDuration' = 'interval 60 days'"

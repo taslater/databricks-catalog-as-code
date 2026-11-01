@@ -1,0 +1,81 @@
+# A merge to main applies prod (docs/design.md, section 7). Nothing else does:
+# the job refuses a commit that didn't come through a pull request merged into
+# main, so a direct push can't deploy, whatever protects the branch.
+# Before it changes anything, it builds a shadow in ucstate_shadow_main and stops if
+# the compiler's model of the source differs from it (docs/offline.md).
+name: apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - catalog/**
+      - packages/ucmodel/**
+      - packages/ucstate/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/apply.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# One apply at a time. A queued apply that a newer one replaces loses
+# nothing, because each plans afresh from its own commit. The lock in
+# ucstate_prod._ucstate covers anything outside Actions.
+concurrency:
+  group: ucstate-apply-prod
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    # A repository with no workspace set up (no DATABRICKS_HOST) skips this.
+    if: github.ref == 'refs/heads/main' && vars.DATABRICKS_HOST != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check the commit came through a merged pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Retried, in case the commit's link to its pull request lags the push.
+          for attempt in 1 2 3; do
+            merged=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+              -q '[.[] | select(.merged_at != null and .base.ref == "main") | "#\(.number)"] | join(", ")')
+            if [ -n "$merged" ]; then
+              echo "$GITHUB_SHA came through $merged"
+              exit 0
+            fi
+            [ "$attempt" = 3 ] || sleep 10
+          done
+          echo "::error::$GITHUB_SHA didn't come through a pull request merged into main, so prod isn't applied. Open a pull request for it."
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run pytest -q
+      - name: Apply prod
+        shell: bash
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+          DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+          DATABRICKS_AUTH_TYPE: oauth-m2m
+          DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+        run: |
+          set +e
+          uv run ucstate --project catalog --shadow-catalog ucstate_shadow_main \
+            apply --target prod --yes > apply.txt 2>&1
+          code=$?
+          set -e
+          cat apply.txt
+          {
+            echo "### ucstate apply to prod"
+            echo
+            echo '```text'
+            cat apply.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"

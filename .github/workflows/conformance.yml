@@ -1,0 +1,88 @@
+# Asks the workspace the questions the offline tests rely on, and saves the
+# answers (docs/offline.md, sections 4 and 8). It runs the live suite, and each
+# scenario it records is uploaded as an artifact, to be committed by hand
+# through a pull request. A changed recording means the platform changed, or
+# the scenario did.
+#
+# A live run creates tables, and a dropped table counts toward the quota for
+# about a week, so conftest.py prints the estimate first and refuses a run over
+# the budget or past the reserve (AGENTS.md, "Live runs on a budget").
+name: conformance
+
+on:
+  workflow_dispatch:
+    inputs:
+      record:
+        description: Run every scenario again, even those with a current recording
+        type: boolean
+        default: false
+      select:
+        description: A pytest -k expression. Empty runs the scenarios only
+        type: string
+        default: ""
+      budget:
+        description: The most tables the run may create
+        type: string
+        default: "250"
+      reserve:
+        description: Tables kept free in the metastore
+        type: string
+        default: "100"
+  schedule:
+    - cron: "17 3 * * 1"  # Mondays, 03:17 UTC
+
+permissions:
+  contents: read
+
+# The live suite shares the quota with a pull request's plan, which may build a
+# shadow, so they run one at a time.
+concurrency:
+  group: ucstate-shadow-pr
+  cancel-in-progress: false
+
+jobs:
+  conformance:
+    # A repository with no workspace set up (no DATABRICKS_HOST) skips this.
+    if: vars.DATABRICKS_HOST != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - run: uv sync --locked
+      - name: Run the live suite
+        shell: bash
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+          DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+          DATABRICKS_AUTH_TYPE: oauth-m2m
+          DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          UCSTATE_LIVE: "1"
+          UCSTATE_WAREHOUSE: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+          # A scheduled run has no inputs: it runs only the scenarios whose
+          # recording is missing or stale, which usually creates nothing. Apply's
+          # cross-check finds a platform change on what is deployed, so a full
+          # re-record (about 105 tables) is asked for by hand.
+          UCSTATE_RECORD: ${{ inputs.record && '1' || '' }}
+          UCSTATE_BUDGET: ${{ inputs.budget || '250' }}
+          UCSTATE_RESERVE: ${{ inputs.reserve || '100' }}
+          SELECT: ${{ inputs.select }}
+        run: |
+          args=(-k "${SELECT:-test_scenario}")
+          uv run pytest -m live -q "${args[@]}" packages/ucstate/tests
+      - name: Collect the recordings that changed
+        if: always()
+        shell: bash
+        run: |
+          mkdir recordings
+          git status --porcelain --untracked-files=all -- packages/ucstate/scenarios \
+            | awk '$2 ~ /recorded\.json$/ {print $2}' \
+            | while read -r file; do cp --parents "$file" recordings/; done
+          find recordings -type f | sort
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: always()
+        with:
+          name: recordings
+          path: recordings
+          if-no-files-found: ignore

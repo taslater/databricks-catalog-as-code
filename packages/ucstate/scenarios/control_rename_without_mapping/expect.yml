@@ -1,0 +1,6 @@
+description: "Control: a rename on a table without column mapping, which the source doesn't declare, is blocked."
+covers: [rename_drop_column]
+classes: [one-way]
+blocked: true
+says:
+  - "needs column mapping: declare 'delta.columnMapping.mode' = 'name'"

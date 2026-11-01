@@ -1,0 +1,196 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_control_rename_column": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469328645,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_control_rename_column",
+     "name": "sc_control_rename_column",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000001",
+     "updated_at": 1793469330433,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "name",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ],
+       "created_at": 1793469330378,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_control_rename_column.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469331000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000003",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000004"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000001",
+       "schema_name": "sc_control_rename_column",
+       "table_id": "00000000-0000-0000-0000-000000000005",
+       "table_type": "MANAGED",
+       "updated_at": 1793469330378,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_control_rename_column": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469337382,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_control_rename_column",
+     "name": "sc_control_rename_column",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000006",
+     "updated_at": 1793469339291,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "full_name",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"full_name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ],
+       "created_at": 1793469339040,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_control_rename_column.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469339000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000007",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000008"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000006",
+       "schema_name": "sc_control_rename_column",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "MANAGED",
+       "updated_at": 1793469339040,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "4031ac428806fbdbb9c8b3a9343e22f6e047422dfc2ee7b5f3fff43d2c8c0ff0",
+ "prechecks": {}
+}

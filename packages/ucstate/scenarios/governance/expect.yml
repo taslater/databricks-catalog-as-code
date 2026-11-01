@@ -1,0 +1,12 @@
+description: Grants, column masks and row filters are added, changed and removed.
+covers: [governance]
+classes: [auto]
+contains:
+  - ALTER TABLE sc_governance.gaining ALTER COLUMN email SET MASK sc_governance.mask_a
+  - ALTER TABLE sc_governance.gaining SET ROW FILTER sc_governance.eu_only ON (region)
+  - ALTER TABLE sc_governance.losing ALTER COLUMN email DROP MASK
+  - ALTER TABLE sc_governance.losing DROP ROW FILTER
+  - ALTER TABLE sc_governance.changing ALTER COLUMN email SET MASK sc_governance.mask_b
+  - REVOKE USE SCHEMA ON SCHEMA sc_governance
+  - REVOKE MODIFY ON TABLE sc_governance.losing
+  - GRANT EXECUTE ON FUNCTION sc_governance.mask_b

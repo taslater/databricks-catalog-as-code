@@ -1,0 +1,9 @@
+description: A CHECK is added once its precheck finds no row in the way.
+covers: [add_check]
+classes: [checked]
+contains:
+  - ALTER TABLE sc_add_check.t ADD CONSTRAINT amount_positive CHECK (amount > 0)
+says:
+  - "precheck (passed): SELECT count_if(NOT coalesce((amount > 0), false))"
+rows:
+  - {query: "SELECT count(*) FROM sc_add_check.t", result: 2}

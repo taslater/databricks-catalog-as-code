@@ -1,0 +1,44 @@
+[project]
+name = "ucatlas"
+version = "0.1.0a1"
+description = "ER diagrams and lineage graphs of a Unity Catalog, as a static site"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Thomas Slater" }]
+keywords = ["databricks", "unity-catalog", "sql", "ddl", "schema-migration"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
+# It also needs Graphviz's `dot` on the PATH.
+dependencies = [
+    "ucmodel>=0.1.0a1,<0.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/taslater/databricks-catalog-as-code"
+Repository = "https://github.com/taslater/databricks-catalog-as-code"
+Issues = "https://github.com/taslater/databricks-catalog-as-code/issues"
+Changelog = "https://github.com/taslater/databricks-catalog-as-code/blob/main/CHANGELOG.md"
+
+[project.scripts]
+ucatlas = "ucatlas.cli:main"
+
+[tool.uv.sources]
+ucmodel = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ucatlas"]

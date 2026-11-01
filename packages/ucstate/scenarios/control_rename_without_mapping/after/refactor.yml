@@ -1,0 +1,2 @@
+- id: 2026-11-01-full-name
+  rename_column: {table: sc_control_rename_without_mapping.t, from: name, to: full_name}

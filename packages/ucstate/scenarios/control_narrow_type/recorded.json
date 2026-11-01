@@ -1,0 +1,174 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_control_narrow_type": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469314963,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_control_narrow_type",
+     "name": "sc_control_narrow_type",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000001",
+     "updated_at": 1793469316940,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "x",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"x\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "INT",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "int"
+        }
+       ],
+       "created_at": 1793469316638,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_control_narrow_type.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469317000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000003",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000004"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000001",
+       "schema_name": "sc_control_narrow_type",
+       "table_id": "00000000-0000-0000-0000-000000000005",
+       "table_type": "MANAGED",
+       "updated_at": 1793469316638,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_control_narrow_type": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469324419,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_control_narrow_type",
+     "name": "sc_control_narrow_type",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000006",
+     "updated_at": 1793469326723,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "x",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"x\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        }
+       ],
+       "created_at": 1793469326649,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_control_narrow_type.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469327000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000007",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000008"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000006",
+       "schema_name": "sc_control_narrow_type",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "MANAGED",
+       "updated_at": 1793469326649,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "97fad83054922622ca12eac2eeb316bbbd727a3a5696bcdf78f332ba1d1cdddd",
+ "prechecks": {}
+}

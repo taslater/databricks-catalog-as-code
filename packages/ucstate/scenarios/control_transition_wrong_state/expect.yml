@@ -1,0 +1,8 @@
+description: "Control: a transition script that leaves the PK out lands on the wrong state, so verify fails."
+covers: [rewrite]
+classes: [rewrite]
+lands: false
+contains:
+  - CAST(qty AS INT) AS qty
+rows:
+  - {query: "SELECT sum(qty) FROM sc_control_transition_wrong_state.t", result: 12}

@@ -1,0 +1,245 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_drop_table": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469115323,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_drop_table",
+     "name": "sc_drop_table",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000001",
+     "updated_at": 1793469117663,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "kept": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "a",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "INT",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "int"
+        }
+       ],
+       "created_at": 1793469117109,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_drop_table.kept",
+       "name": "kept",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469117000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000003",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000004"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000001",
+       "schema_name": "sc_drop_table",
+       "table_id": "00000000-0000-0000-0000-000000000005",
+       "table_type": "MANAGED",
+       "updated_at": 1793469117109,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_drop_table": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469124807,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_drop_table",
+     "name": "sc_drop_table",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000006",
+     "updated_at": 1793469127075,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "doomed": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "a",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "INT",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "int"
+        }
+       ],
+       "created_at": 1793469126452,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_drop_table.doomed",
+       "name": "doomed",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469127000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000007",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000008",
+        "spark.sql.statistics.auxiliaryInfo": "{\"source\":\"AUTO_STATS\"}",
+        "spark.sql.statistics.colStats.a.avgLen": "4",
+        "spark.sql.statistics.colStats.a.createdAt": "1793469129424",
+        "spark.sql.statistics.colStats.a.createdBy": "root",
+        "spark.sql.statistics.colStats.a.distinctCount": "1",
+        "spark.sql.statistics.colStats.a.max": "1",
+        "spark.sql.statistics.colStats.a.maxLen": "4",
+        "spark.sql.statistics.colStats.a.min": "1",
+        "spark.sql.statistics.colStats.a.nullCount": "0",
+        "spark.sql.statistics.colStats.a.rowCount": "1",
+        "spark.sql.statistics.colStats.a.version": "2",
+        "spark.sql.statistics.createdAt": "1793469129424",
+        "spark.sql.statistics.createdBy": "root",
+        "spark.sql.statistics.numRows": "1",
+        "spark.sql.statistics.totalSize": "941",
+        "spark.sql.statistics.version": "2"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000006",
+       "schema_name": "sc_drop_table",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "MANAGED",
+       "updated_at": 1793469129972,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     },
+     "kept": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "a",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "INT",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "int"
+        }
+       ],
+       "created_at": 1793469128199,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_drop_table.kept",
+       "name": "kept",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469129000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000010",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000011"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000006",
+       "schema_name": "sc_drop_table",
+       "table_id": "00000000-0000-0000-0000-000000000012",
+       "table_type": "MANAGED",
+       "updated_at": 1793469128199,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "941ee7540c52fe3d6a6adba2bc1fa1ca59703115a5ba33a44b5dc21bf95160f7",
+ "prechecks": {}
+}

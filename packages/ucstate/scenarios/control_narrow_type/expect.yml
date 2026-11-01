@@ -1,0 +1,6 @@
+description: "Control: BIGINT to INT is not widening, so without a transition script it is blocked."
+covers: [rewrite]
+classes: [rewrite]
+blocked: true
+says:
+  - "needs a transition script"

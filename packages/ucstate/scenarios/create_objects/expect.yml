@@ -1,0 +1,8 @@
+description: Every kind of object is created in an existing schema, in dependency order.
+covers: [create]
+classes: [auto]
+contains:
+  - CREATE TABLE sc_create_objects.orders
+  - CREATE VIEW sc_create_objects.customer_totals
+  - CREATE VOLUME sc_create_objects.landing
+  - ADD CONSTRAINT employees_manager_fk

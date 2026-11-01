@@ -1,0 +1,9 @@
+description: "Control: a table gone and one new of the same shape could be a rename, so it is blocked."
+covers: [ambiguous]
+classes: [ambiguous]
+blocked: true
+says:
+  - "rename_table: {from: sc_control_rename_table.old_t, to: sc_control_rename_table.new_t}"
+  - "- drop_table: sc_control_rename_table.old_t"
+rows:
+  - {query: "SELECT count(*) FROM sc_control_rename_table.old_t", result: 1}

@@ -1,0 +1,9 @@
+description: refactor.yml renames a table first; its FK follows and its view is replaced.
+covers: [rename_table]
+classes: [auto]
+contains:
+  - ALTER TABLE sc_rename_table.parent RENAME TO sc_rename_table.accounts
+  - CREATE OR REPLACE VIEW sc_rename_table.v
+rows:
+  - {query: "SELECT count(*) FROM sc_rename_table.accounts", result: 2}
+  - {query: "SELECT count(*) FROM sc_rename_table.v", result: 2}

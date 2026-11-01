@@ -1,0 +1,8 @@
+description: "Control: a NULL violates a CHECK in Delta, so a CHECK on a column with one fails its precheck."
+covers: [add_check]
+classes: [checked]
+blocked: true
+says:
+  - its precheck found 1 row in the way
+rows:
+  - {query: "SELECT count(*) FROM sc_control_add_check.t WHERE amount IS NULL", result: 1}

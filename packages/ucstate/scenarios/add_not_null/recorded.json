@@ -1,0 +1,224 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_add_not_null": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469223407,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_add_not_null",
+     "name": "sc_add_not_null",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000001",
+     "updated_at": 1793469223407,
+     "updated_by": "owner@example.com"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "x",
+         "nullable": false,
+         "position": 1,
+         "type_json": "{\"name\":\"x\",\"type\":\"integer\",\"nullable\":false,\"metadata\":{}}",
+         "type_name": "INT",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "int"
+        }
+       ],
+       "created_at": 1793469225147,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_add_not_null.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469225000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000002",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000003"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000001",
+       "schema_name": "sc_add_not_null",
+       "table_id": "00000000-0000-0000-0000-000000000004",
+       "table_type": "MANAGED",
+       "updated_at": 1793469225147,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_add_not_null": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469232761,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_add_not_null",
+     "name": "sc_add_not_null",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000005",
+     "updated_at": 1793469235019,
+     "updated_by": "00000000-0000-0000-0000-000000000006"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "x",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"x\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "INT",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "int"
+        }
+       ],
+       "created_at": 1793469234675,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_add_not_null.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469235000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000007",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000008",
+        "spark.sql.statistics.auxiliaryInfo": "{\"source\":\"AUTO_STATS\"}",
+        "spark.sql.statistics.colStats.id.avgLen": "8",
+        "spark.sql.statistics.colStats.id.createdAt": "1793469235897",
+        "spark.sql.statistics.colStats.id.createdBy": "root",
+        "spark.sql.statistics.colStats.id.distinctCount": "2",
+        "spark.sql.statistics.colStats.id.max": "2",
+        "spark.sql.statistics.colStats.id.maxLen": "8",
+        "spark.sql.statistics.colStats.id.min": "1",
+        "spark.sql.statistics.colStats.id.nullCount": "0",
+        "spark.sql.statistics.colStats.id.rowCount": "2",
+        "spark.sql.statistics.colStats.id.version": "2",
+        "spark.sql.statistics.colStats.x.avgLen": "4",
+        "spark.sql.statistics.colStats.x.createdAt": "1793469235897",
+        "spark.sql.statistics.colStats.x.createdBy": "root",
+        "spark.sql.statistics.colStats.x.distinctCount": "2",
+        "spark.sql.statistics.colStats.x.max": "2",
+        "spark.sql.statistics.colStats.x.maxLen": "4",
+        "spark.sql.statistics.colStats.x.min": "1",
+        "spark.sql.statistics.colStats.x.nullCount": "0",
+        "spark.sql.statistics.colStats.x.rowCount": "2",
+        "spark.sql.statistics.colStats.x.version": "2",
+        "spark.sql.statistics.createdAt": "1793469235897",
+        "spark.sql.statistics.createdBy": "root",
+        "spark.sql.statistics.numRows": "2",
+        "spark.sql.statistics.totalSize": "1146",
+        "spark.sql.statistics.version": "2"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000005",
+       "schema_name": "sc_add_not_null",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "MANAGED",
+       "updated_at": 1793469236507,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "b090c9cc2f59849300afe75c4dcc3f8c327f90149214b09064674a53e89951c0",
+ "prechecks": {
+  "SELECT count_if(x IS NULL) AS violations FROM sc_add_not_null.t": 0
+ }
+}

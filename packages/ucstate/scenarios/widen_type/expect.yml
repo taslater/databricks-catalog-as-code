@@ -1,0 +1,8 @@
+description: INT widens to BIGINT in place, with the type widening the source declares.
+covers: [widen_type]
+classes: [one-way]
+contains:
+  - ALTER TABLE sc_widen_type.t SET TBLPROPERTIES ('delta.enableTypeWidening' = 'true')
+  - ALTER TABLE sc_widen_type.t ALTER COLUMN x TYPE BIGINT
+rows:
+  - {query: "SELECT sum(x) FROM sc_widen_type.t", result: 2147483648}

@@ -1,0 +1,13 @@
+.databricks/
+.venv/
+__pycache__/
+.DS_Store
+phase0-*.json
+.claude/
+.pi/
+.vscode/
+site/
+packages/ucstate/scenarios/*/recorded.rejected.json
+.ucstate/
+snapshots/
+.ucatlas/

@@ -1,0 +1,9 @@
+description: "Control: dropping a table loses data, so without an allowance it is blocked, even under policy drop."
+covers: [drop_table]
+policy: {unmanaged_objects: drop}
+classes: [destructive]
+blocked: true
+says:
+  - "needs an allowance in project.yml: allow: [drop_table: sc_control_drop_table.doomed]"
+rows:
+  - {query: "SELECT count(*) FROM sc_control_drop_table.doomed", result: 1}

@@ -1,0 +1,251 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_add_columns": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793468693346,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_add_columns",
+     "name": "sc_add_columns",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000001",
+     "updated_at": 1793468695346,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "orders": {
+      "column_tags": {
+       "note": {
+        "pii": "no"
+       }
+      },
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "order_id",
+         "nullable": false,
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":false,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "comment": "Free text",
+         "name": "note",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"note\",\"type\":\"string\",\"nullable\":true,\"metadata\":{\"comment\":\"Free text\",\"CURRENT_DEFAULT\":\"'none'\"}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 2,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        },
+        {
+         "column_masks": {},
+         "name": "shipped",
+         "nullable": true,
+         "position": 3,
+         "type_json": "{\"name\":\"shipped\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "BOOLEAN",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "boolean"
+        }
+       ],
+       "created_at": 1793468696159,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_add_columns.orders",
+       "name": "orders",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.allowColumnDefaults": "supported",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793468696000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000003",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000004"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000001",
+       "schema_name": "sc_add_columns",
+       "table_id": "00000000-0000-0000-0000-000000000005",
+       "table_type": "MANAGED",
+       "updated_at": 1793468696923,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_add_columns": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793468703013,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_add_columns",
+     "name": "sc_add_columns",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000006",
+     "updated_at": 1793468705257,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "orders": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "order_id",
+         "nullable": false,
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":false,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ],
+       "created_at": 1793468705930,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_add_columns.orders",
+       "name": "orders",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.allowColumnDefaults": "supported",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793468706000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000007",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000008",
+        "spark.sql.statistics.auxiliaryInfo": "{\"source\":\"AUTO_STATS\"}",
+        "spark.sql.statistics.colStats.amount.avgLen": "8",
+        "spark.sql.statistics.colStats.amount.createdAt": "1793468707515",
+        "spark.sql.statistics.colStats.amount.createdBy": "root",
+        "spark.sql.statistics.colStats.amount.distinctCount": "3",
+        "spark.sql.statistics.colStats.amount.max": "30.00",
+        "spark.sql.statistics.colStats.amount.maxLen": "8",
+        "spark.sql.statistics.colStats.amount.min": "10.00",
+        "spark.sql.statistics.colStats.amount.nullCount": "0",
+        "spark.sql.statistics.colStats.amount.rowCount": "3",
+        "spark.sql.statistics.colStats.amount.version": "2",
+        "spark.sql.statistics.colStats.order_id.avgLen": "8",
+        "spark.sql.statistics.colStats.order_id.createdAt": "1793468707515",
+        "spark.sql.statistics.colStats.order_id.createdBy": "root",
+        "spark.sql.statistics.colStats.order_id.distinctCount": "3",
+        "spark.sql.statistics.colStats.order_id.max": "3",
+        "spark.sql.statistics.colStats.order_id.maxLen": "8",
+        "spark.sql.statistics.colStats.order_id.min": "1",
+        "spark.sql.statistics.colStats.order_id.nullCount": "0",
+        "spark.sql.statistics.colStats.order_id.rowCount": "3",
+        "spark.sql.statistics.colStats.order_id.version": "2",
+        "spark.sql.statistics.createdAt": "1793468707515",
+        "spark.sql.statistics.createdBy": "root",
+        "spark.sql.statistics.numRows": "3",
+        "spark.sql.statistics.totalSize": "1210",
+        "spark.sql.statistics.version": "2"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000006",
+       "schema_name": "sc_add_columns",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "MANAGED",
+       "updated_at": 1793468708218,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "0d72ca4add5b69d3a26ebc15037d491f83915deca425797ab649c1ad42ef2b86",
+ "prechecks": {}
+}

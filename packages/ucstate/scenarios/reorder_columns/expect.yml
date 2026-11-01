@@ -1,0 +1,8 @@
+description: Columns are reordered with the fewest moves, and the values move with them.
+covers: [reorder_columns]
+classes: [auto]
+contains:
+  - ALTER COLUMN d FIRST
+rows:
+  - {query: "SELECT b FROM sc_reorder_columns.events WHERE a = 1", result: x}
+  - {query: "SELECT d FROM sc_reorder_columns.events WHERE a = 2", result: "2.5"}

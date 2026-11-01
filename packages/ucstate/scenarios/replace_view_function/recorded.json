@@ -1,0 +1,1048 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_replace_view_function": {
+    "functions": {
+     "mask_status": {
+      "grants": {
+       "account users": [
+        "EXECUTE"
+       ]
+      },
+      "info": {
+       "catalog_name": "ucstate_test",
+       "created_at": 1793468949915,
+       "created_by": "owner@example.com",
+       "data_type": "STRING",
+       "full_data_type": "STRING COLLATE UTF8_BINARY",
+       "full_name": "ucstate_test.sc_replace_view_function.mask_status",
+       "function_id": "00000000-0000-0000-0000-000000000001",
+       "input_params": {
+        "parameters": [
+         {
+          "name": "v",
+          "parameter_type": "PARAM",
+          "position": 0,
+          "type_json": "{\"name\":\"v\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+          "type_name": "STRING",
+          "type_precision": 0,
+          "type_scale": 0,
+          "type_text": "string collate UTF8_BINARY"
+         }
+        ]
+       },
+       "is_deterministic": true,
+       "name": "mask_status",
+       "owner": "owner@example.com",
+       "parameter_style": "S",
+       "routine_body": "SQL",
+       "routine_definition": "left(v, 1)",
+       "schema_name": "sc_replace_view_function",
+       "security_type": "DEFINER",
+       "specific_name": "mask_status",
+       "sql_data_access": "CONTAINS_SQL",
+       "updated_at": 1793468949915,
+       "updated_by": "owner@example.com"
+      }
+     },
+     "net": {
+      "grants": {
+       "account users": [
+        "EXECUTE"
+       ]
+      },
+      "info": {
+       "catalog_name": "ucstate_test",
+       "created_at": 1793468951280,
+       "created_by": "owner@example.com",
+       "data_type": "DOUBLE",
+       "full_data_type": "DOUBLE",
+       "full_name": "ucstate_test.sc_replace_view_function.net",
+       "function_id": "00000000-0000-0000-0000-000000000002",
+       "input_params": {
+        "parameters": [
+         {
+          "name": "amount",
+          "parameter_type": "PARAM",
+          "position": 0,
+          "type_json": "{\"name\":\"amount\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}}",
+          "type_name": "DOUBLE",
+          "type_precision": 0,
+          "type_scale": 0,
+          "type_text": "double"
+         }
+        ]
+       },
+       "is_deterministic": true,
+       "name": "net",
+       "owner": "owner@example.com",
+       "parameter_style": "S",
+       "routine_body": "SQL",
+       "routine_definition": "amount * 0.75",
+       "schema_name": "sc_replace_view_function",
+       "security_type": "DEFINER",
+       "specific_name": "net",
+       "sql_data_access": "CONTAINS_SQL",
+       "updated_at": 1793468951280,
+       "updated_by": "owner@example.com"
+      }
+     }
+    },
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793468949280,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_replace_view_function",
+     "name": "sc_replace_view_function",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000003",
+     "updated_at": 1793468951233,
+     "updated_by": "00000000-0000-0000-0000-000000000004"
+    },
+    "tables": {
+     "masked": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {
+          "column_masks": [
+           {
+            "function_name": "ucstate_test.sc_replace_view_function.mask_status"
+           }
+          ]
+         },
+         "effective_masks": [
+          {
+           "function_name": "ucstate_test.sc_replace_view_function.mask_status"
+          }
+         ],
+         "mask": {
+          "function_name": "ucstate_test.sc_replace_view_function.mask_status"
+         },
+         "name": "status",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"status\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ],
+       "created_at": 1793468953634,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_replace_view_function.masked",
+       "name": "masked",
+       "owner": "owner@example.com",
+       "properties": {
+        "clusterByAuto": "true",
+        "clusteringColumns": "[]",
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.checkpointPolicy": "v2",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.clustering": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.feature.v2Checkpoint": "supported",
+        "delta.lastCommitTimestamp": "1793468954000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000005",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000006",
+        "io.unitycatalog.tableId": "00000000-0000-0000-0000-000000000007"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000003",
+       "schema_name": "sc_replace_view_function",
+       "table_id": "00000000-0000-0000-0000-000000000007",
+       "table_type": "MANAGED",
+       "updated_at": 1793468953634,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     },
+     "open_orders": {
+      "column_tags": {
+       "order_id": {
+        "key": "yes"
+       }
+      },
+      "grants": {
+       "account users": [
+        "SELECT"
+       ]
+      },
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "comment": "Order key",
+         "name": "order_id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{\"comment\":\"Order key\"}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ],
+       "comment": "Orders not yet shipped",
+       "created_at": 1793468956022,
+       "created_by": "owner@example.com",
+       "full_name": "ucstate_test.sc_replace_view_function.open_orders",
+       "name": "open_orders",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "view.catalogAndNamespace.numParts": "2",
+        "view.catalogAndNamespace.part.0": "ucstate_test",
+        "view.catalogAndNamespace.part.1": "sc_replace_view_function",
+        "view.query.out.col.0": "order_id",
+        "view.query.out.col.1": "amount",
+        "view.query.out.numCols": "2",
+        "view.referredTempFunctionsNames": "[]",
+        "view.referredTempTableNames": "[]",
+        "view.referredTempVariablesNames": "[]",
+        "view.referredTempViewNames": "[]",
+        "view.resolutionPath": "[[\"system\",\"builtin\"],[\"system\",\"ai\"],[\"ucstate_test\",\"sc_replace_view_function\"]]",
+        "view.schemaMode": "COMPENSATION",
+        "view.sqlConfig.runtime.databricks.sql.functions.counter_diff.enabled": "true",
+        "view.sqlConfig.runtime.databricks.sql.functions.time_bucket.enabled": "true",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.initialSize": "4",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.maxRetries": "100",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.partitionJitterEnabled": "true",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.retriableInvokeStatusCodes": "UNAVAILABLE,RESOURCE_EXHAUSTED,DEADLINE_EXCEEDED,ABORTED,CANCELLED",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.retryMaxDelayMs": "120000",
+        "view.sqlConfig.spark.databricks.ai.grpc.sync.retriableStatusCodes": "UNAVAILABLE,RESOURCE_EXHAUSTED,DEADLINE_EXCEEDED,ABORTED,CANCELLED",
+        "view.sqlConfig.spark.databricks.docingest.apdfl.sandbox.enabled": "false",
+        "view.sqlConfig.spark.databricks.docingest.batchEval.size": "8",
+        "view.sqlConfig.spark.databricks.docingest.contentElementTypes.excluded": "",
+        "view.sqlConfig.spark.databricks.docingest.maxDocumentPages": "1000",
+        "view.sqlConfig.spark.databricks.docingest.pagination.concurrency": "1",
+        "view.sqlConfig.spark.databricks.docingest.pdf.drawFlags": "USE_ANNOT_FACES",
+        "view.sqlConfig.spark.databricks.docingest.stage2.descriptionModel": "databricks-gemma-3-12b",
+        "view.sqlConfig.spark.databricks.docingest.version.default": "2.0",
+        "view.sqlConfig.spark.databricks.sql.ai.hermes.embeddingBatch.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.aimdLimiter.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.aimdLimiter.max": "200",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.globalMaxInFlightElements": "10240",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxBufferedResults": "512",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxInFlightElements": "200",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxWaitTimeSeconds": "172800",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.initialRetryInterval": "100",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.maxRetryInterval": "10000",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.retryIntervalJitterFactor": "1.0",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.richArguments.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.hermes.extendedTypeConversion.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.expression.aiFunctions.repartition": "0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiDetectAnomalies.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiForecast.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiForecastV2.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiForecastV2.modelPath": "/Volumes/system/__internal_ai/ai_forecast_volume/forecaster_v5",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.aclValidateAllFunctions": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.clusterSizeBasedGlobalParallelism.scaleFactor": "512.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.debugLogEnabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.dynamicPoolSizeEnabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.maxPoolSize": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.maxPoolSize.aiParseDocument": "64",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdCurrentQpsIncreaseRatio": "0.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdSuccessRatio": "0.95",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdTotalQpsIncreaseRatio": "0.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.taskWaitTimeInSeconds": "1000",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.threadKeepAliveTimeInSeconds": "600",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.useDynamicTaskQueueExecutor": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.aiQuery.embedding.request.size": "40",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.execution.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.execution.size": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchInferenceApi.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchSession.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchSession.terminate.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.createBatchSessionOnExecutor": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.decimal.dataType.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.disabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.embeddingsEndpointName": "databricks-gte-large-en",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.extract.tileMetadata.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.grpc.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.directBuilder.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.failOnError.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.files.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.errorTemplate.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.partitionProcessorConf.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermesEnabledFunctions": "ai_classify,ai_extract,ai_prep_search,ai_parse_document,ai_search,ai_query,ai_mask,ai_enrich,ai_transcribe,ai_summarize,ai_fix_grammar,ai_analyze_sentiment,ai_translate,ai_decide",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.includeWorkspaceUrl": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.model.parameters.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.modelEndpointTypeParsing.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.multiModality.model.list": "databricks-llama-4-maverick,databricks-claude-sonnet-4,databricks-claude-3-7-sonnet,databricks-gemma-3-12b,databricks-gpt-5,databricks-gpt-5-mini,databricks-gpt-5-nano,databricks-gpt-5-1,databricks-gpt-5-2,databricks-gemini-2-5-flash,databricks-gemini-2-5-pro,databricks-gemini-3-flash,databricks-gemini-3-pro,databricks-claude-haiku-4-5",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.multiModality.useCapabilitiesApi": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.nullInputJsonOutput": "{\"response\":null,\"error_message\":null}",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.purposeBuiltFunctions.batch.execution.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.purposeBuiltFunctions.translate.instruction": "### Instruction\n\nTranslate the provided text to %s, and output only the translated text\nin the target language in this format: <DBSQLAI>translated text</DBSQLAI>.\n\nIf the text is already in the target language, output the provided text.\n\n### Text\n\n%s",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.registry.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteFunction.grpc.batch.maxConcurrentRequests": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteHttpClient.maxConnections": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteHttpClient.timeoutInSeconds": "360",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.safe.inference.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.scalingReasonLogging.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.similarity.batch.execution.enabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.useDedicatedHttpClient": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.useGrpcForSessionManagement": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.initialRetryIntervalMillis": "1000",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.maxRetryInterval": "120000",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.retryIntervalMultiplierFactor": "2.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiGen.endpointName": "databricks-meta-llama-3-3-70b-instruct",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.hybrid.reasoning.foundation.model.list": "databricks-claude-3-7-sonnet,databricks-gemini-2-5-pro,databricks-gemini-2-5-flash,databricks-gemini-3-flash",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.openAI.oSeries.model.list": "o1-mini,o1,o3-mini,o3,o4-mini,gpt-5,gpt-5-mini,gpt-5-nano,GPT-5,GPT-5 Mini,GPT-5 Nano",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.temperature.whitelistMode.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.ucModelService.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.byEmbeddingVector.enabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.use.indexIdentifierOnly": "true",
+        "view.sqlConfig.spark.databricks.sql.rowColumnAccess.useEffectivePolicies.enabled": "true",
+        "view.sqlConfig.spark.sql.analyzer.dontDeduplicateExpressionIfExprIdInOutput": "false",
+        "view.sqlConfig.spark.sql.ansi.enabled": "true",
+        "view.sqlConfig.spark.sql.ansi.enforceAnsiTypeCoercion": "true",
+        "view.sqlConfig.spark.sql.ansi.enforceReservedKeywords": "false",
+        "view.sqlConfig.spark.sql.artifact.includeClusterScopedJars": "false",
+        "view.sqlConfig.spark.sql.artifact.isolation.enabled": "false",
+        "view.sqlConfig.spark.sql.avro.datetimeRebaseModeInRead": "LEGACY",
+        "view.sqlConfig.spark.sql.avro.datetimeRebaseModeInWrite": "LEGACY",
+        "view.sqlConfig.spark.sql.columnVector.offheap.enabled": "true",
+        "view.sqlConfig.spark.sql.copyInto.timeout.threadDump.enabled": "false",
+        "view.sqlConfig.spark.sql.cte.recursion.enabled": "true",
+        "view.sqlConfig.spark.sql.datetime.java8API.enabled": "true",
+        "view.sqlConfig.spark.sql.defaultStorage.useDefaultStorageForCreateCatalogWithoutLocation.enabled": "true",
+        "view.sqlConfig.spark.sql.excel.streaming.enabled": "true",
+        "view.sqlConfig.spark.sql.fileType.enabled": "true",
+        "view.sqlConfig.spark.sql.functions.remoteHttpClient.redirectLogging.enabled": "true",
+        "view.sqlConfig.spark.sql.functions.remoteHttpClient.retryOn400TimeoutError": "true",
+        "view.sqlConfig.spark.sql.functions.remoteHttpClient.retryOnSocketTimeoutException": "true",
+        "view.sqlConfig.spark.sql.hive.convertCTAS": "true",
+        "view.sqlConfig.spark.sql.insertIntoReplaceUsing.disallowMisalignedColumns.enabled": "true",
+        "view.sqlConfig.spark.sql.insertIntoReplaceUsing.oldDPOCodePath.enabled": "true",
+        "view.sqlConfig.spark.sql.legacy.blockCreateTempTableUsingProvider": "true",
+        "view.sqlConfig.spark.sql.legacy.codingErrorAction": "true",
+        "view.sqlConfig.spark.sql.legacy.createHiveTableByDefault": "false",
+        "view.sqlConfig.spark.sql.legacy.observeMetricsAggregateAllAttempts": "true",
+        "view.sqlConfig.spark.sql.legacy.useLegacyXMLParser.migrationValidation.enabled": "false",
+        "view.sqlConfig.spark.sql.orc.compression.codec": "snappy",
+        "view.sqlConfig.spark.sql.parquet.compression.codec": "snappy",
+        "view.sqlConfig.spark.sql.parquet.datetimeRebaseModeInRead": "LEGACY",
+        "view.sqlConfig.spark.sql.parquet.datetimeRebaseModeInWrite": "LEGACY",
+        "view.sqlConfig.spark.sql.path.enabled": "true",
+        "view.sqlConfig.spark.sql.photon.skipIndexForTextSearch.indexingBitmapAgg.forceSerializedOutput": "false",
+        "view.sqlConfig.spark.sql.photon.skipIndexForTextSearch.indexingBitmapAndAgg.enabled": "true",
+        "view.sqlConfig.spark.sql.pivot.emptyBucketReturnsAggregateDefault": "false",
+        "view.sqlConfig.spark.sql.scripting.enabled": "true",
+        "view.sqlConfig.spark.sql.scripting.maxNumberOfCharacters": "1000000",
+        "view.sqlConfig.spark.sql.scripting.maxNumberOfLines": "30000",
+        "view.sqlConfig.spark.sql.searchIndex.alterColumnSyntax.enabled": "true",
+        "view.sqlConfig.spark.sql.searchIndex.clusterBy.enabled": "true",
+        "view.sqlConfig.spark.sql.searchIndex.clusterBy.generalization.enabled": "true",
+        "view.sqlConfig.spark.sql.secondaryIndex.asyncCreation.enabled": "false",
+        "view.sqlConfig.spark.sql.secondaryIndex.manualRefresh.disabled": "false",
+        "view.sqlConfig.spark.sql.secondaryIndex.rowIdWatermark.enabled": "true",
+        "view.sqlConfig.spark.sql.secondaryIndex.showInDescribeTable": "true",
+        "view.sqlConfig.spark.sql.secondaryIndex.ucIntegration.enabled": "true",
+        "view.sqlConfig.spark.sql.session.timeZone": "Etc/UTC",
+        "view.sqlConfig.spark.sql.shuffleDependency.skipMigration.enabled": "true",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.enabled": "true",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.incremental.maxBytesThreshold": "10000000000000",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.ngramIndex.parameterCalculation": "true",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.patternBucketCount": "524288",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.rowsBatchSize": "32",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.v2.enabled": "true",
+        "view.sqlConfig.spark.sql.sources.commitProtocolClass": "com.databricks.sql.transaction.directory.DirectoryAtomicCommitProtocol",
+        "view.sqlConfig.spark.sql.sources.default": "delta",
+        "view.sqlConfig.spark.sql.sqlgateway.retry.readyOnlyCommands.v2.enabled": "true",
+        "view.sqlConfig.spark.sql.sqlgateway.retry.stateChangingCommands.enabled": "true",
+        "view.sqlConfig.spark.sql.sqlgateway.retryFailFastModeEnabled": "true",
+        "view.sqlConfig.spark.sql.standardIndex.costBasedSelection.enabled": "true",
+        "view.sqlConfig.spark.sql.standardIndex.enabled": "false",
+        "view.sqlConfig.spark.sql.streaming.checkpoint.fileChecksum.enabled": "false",
+        "view.sqlConfig.spark.sql.streaming.optimizer.subqueryEarlyUnnesting.enabled": "false",
+        "view.sqlConfig.spark.sql.streaming.stopTimeout": "15s",
+        "view.sqlConfig.spark.sql.thriftServer.interruptOnCancel": "true",
+        "view.sqlConfig.spark.sql.thriftServer.queryTimeout": "0",
+        "view.sqlConfig.spark.sql.thriftserver.scheduler.pool": "thriftserver-session-00000000-0000-0000-0000-000000000008",
+        "view.sqlConfig.spark.sql.timeType.enabled": "true",
+        "view.sqlConfig.spark.sql.timestampNanosTypes.enabled": "false",
+        "view.sqlConfig.spark.sql.validateColumnNamesSync.throwException": "true",
+        "view.sqlConfig.spark.sql.variable.substitute": "false",
+        "view.sqlConfig.spark.sql.variant.pushVariantIntoScan": "true",
+        "view.sqlConfig.spark.sql.variant.pushVariantIntoScan.deferCastError": "true",
+        "view.sqlConfig.spark.sql.variant.writeShredding.enabled": "true",
+        "view.sqlConfig.spark.sql.vectorIndex.enabled": "false",
+        "view.sqlConfig.spark.sql.vectorIndex.numCentroidsScalingFactor": "4",
+        "view.sqlConfig.spark.sql.vectorIndex.optimization.enabled": "false",
+        "view.sqlConfig.spark.sql.vectorIndex.optimization.enabledForCommands": "false",
+        "view.sqlConfig.spark.thriftserver.cloudStoreBasedRowSet.arrowRowLevelByteTrimming": "false"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000003",
+       "schema_name": "sc_replace_view_function",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "VIEW",
+       "updated_at": 1793468957177,
+       "updated_by": "owner@example.com",
+       "view_definition": "SELECT order_id, amount FROM sc_replace_view_function.orders WHERE status IN ('open', 'held')",
+       "view_dependencies": {
+        "dependencies": [
+         {
+          "table": {
+           "table_full_name": "ucstate_test.sc_replace_view_function.orders"
+          }
+         }
+        ]
+       }
+      },
+      "tags": {
+       "domain": "sales"
+      }
+     },
+     "orders": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "order_id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        },
+        {
+         "column_masks": {},
+         "name": "status",
+         "nullable": true,
+         "position": 2,
+         "type_json": "{\"name\":\"status\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ],
+       "created_at": 1793468955303,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_replace_view_function.orders",
+       "name": "orders",
+       "owner": "owner@example.com",
+       "properties": {
+        "clusterByAuto": "true",
+        "clusteringColumns": "[]",
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.checkpointPolicy": "v2",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.clustering": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.feature.v2Checkpoint": "supported",
+        "delta.lastCommitTimestamp": "1793468956000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000010",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000011",
+        "io.unitycatalog.tableId": "00000000-0000-0000-0000-000000000012"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000003",
+       "schema_name": "sc_replace_view_function",
+       "table_id": "00000000-0000-0000-0000-000000000012",
+       "table_type": "MANAGED",
+       "updated_at": 1793468955303,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_replace_view_function": {
+    "functions": {
+     "mask_status": {
+      "grants": {
+       "account users": [
+        "EXECUTE"
+       ]
+      },
+      "info": {
+       "catalog_name": "ucstate_test",
+       "created_at": 1793468969299,
+       "created_by": "owner@example.com",
+       "data_type": "STRING",
+       "full_data_type": "STRING COLLATE UTF8_BINARY",
+       "full_name": "ucstate_test.sc_replace_view_function.mask_status",
+       "function_id": "00000000-0000-0000-0000-000000000013",
+       "input_params": {
+        "parameters": [
+         {
+          "name": "v",
+          "parameter_type": "PARAM",
+          "position": 0,
+          "type_json": "{\"name\":\"v\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+          "type_name": "STRING",
+          "type_precision": 0,
+          "type_scale": 0,
+          "type_text": "string collate UTF8_BINARY"
+         }
+        ]
+       },
+       "is_deterministic": true,
+       "name": "mask_status",
+       "owner": "owner@example.com",
+       "parameter_style": "S",
+       "routine_body": "SQL",
+       "routine_definition": "'***'",
+       "schema_name": "sc_replace_view_function",
+       "security_type": "DEFINER",
+       "specific_name": "mask_status",
+       "sql_data_access": "CONTAINS_SQL",
+       "updated_at": 1793468969299,
+       "updated_by": "owner@example.com"
+      }
+     },
+     "net": {
+      "grants": {
+       "account users": [
+        "EXECUTE"
+       ]
+      },
+      "info": {
+       "catalog_name": "ucstate_test",
+       "created_at": 1793468970426,
+       "created_by": "owner@example.com",
+       "data_type": "DOUBLE",
+       "full_data_type": "DOUBLE",
+       "full_name": "ucstate_test.sc_replace_view_function.net",
+       "function_id": "00000000-0000-0000-0000-000000000014",
+       "input_params": {
+        "parameters": [
+         {
+          "name": "amount",
+          "parameter_type": "PARAM",
+          "position": 0,
+          "type_json": "{\"name\":\"amount\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}}",
+          "type_name": "DOUBLE",
+          "type_precision": 0,
+          "type_scale": 0,
+          "type_text": "double"
+         }
+        ]
+       },
+       "is_deterministic": true,
+       "name": "net",
+       "owner": "owner@example.com",
+       "parameter_style": "S",
+       "routine_body": "SQL",
+       "routine_definition": "amount * 0.8",
+       "schema_name": "sc_replace_view_function",
+       "security_type": "DEFINER",
+       "specific_name": "net",
+       "sql_data_access": "CONTAINS_SQL",
+       "updated_at": 1793468970426,
+       "updated_by": "owner@example.com"
+      }
+     }
+    },
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793468963850,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_replace_view_function",
+     "name": "sc_replace_view_function",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000015",
+     "updated_at": 1793468965772,
+     "updated_by": "00000000-0000-0000-0000-000000000004"
+    },
+    "tables": {
+     "masked": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {
+          "column_masks": [
+           {
+            "function_name": "ucstate_test.sc_replace_view_function.mask_status"
+           }
+          ]
+         },
+         "effective_masks": [
+          {
+           "function_name": "ucstate_test.sc_replace_view_function.mask_status"
+          }
+         ],
+         "mask": {
+          "function_name": "ucstate_test.sc_replace_view_function.mask_status"
+         },
+         "name": "status",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"status\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ],
+       "created_at": 1793468972699,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_replace_view_function.masked",
+       "name": "masked",
+       "owner": "owner@example.com",
+       "properties": {
+        "clusterByAuto": "true",
+        "clusteringColumns": "[]",
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.checkpointPolicy": "v2",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.clustering": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.feature.v2Checkpoint": "supported",
+        "delta.lastCommitTimestamp": "1793468973000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000016",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000017",
+        "io.unitycatalog.tableId": "00000000-0000-0000-0000-000000000018"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000015",
+       "schema_name": "sc_replace_view_function",
+       "table_id": "00000000-0000-0000-0000-000000000018",
+       "table_type": "MANAGED",
+       "updated_at": 1793468972699,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     },
+     "open_orders": {
+      "column_tags": {
+       "order_id": {
+        "key": "yes"
+       }
+      },
+      "grants": {
+       "account users": [
+        "SELECT"
+       ]
+      },
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "comment": "Order key",
+         "name": "order_id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{\"comment\":\"Order key\"}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ],
+       "comment": "Open orders",
+       "created_at": 1793468967178,
+       "created_by": "owner@example.com",
+       "full_name": "ucstate_test.sc_replace_view_function.open_orders",
+       "name": "open_orders",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "view.catalogAndNamespace.numParts": "2",
+        "view.catalogAndNamespace.part.0": "ucstate_test",
+        "view.catalogAndNamespace.part.1": "sc_replace_view_function",
+        "view.query.out.col.0": "order_id",
+        "view.query.out.col.1": "amount",
+        "view.query.out.numCols": "2",
+        "view.referredTempFunctionsNames": "[]",
+        "view.referredTempTableNames": "[]",
+        "view.referredTempVariablesNames": "[]",
+        "view.referredTempViewNames": "[]",
+        "view.resolutionPath": "[[\"system\",\"builtin\"],[\"system\",\"ai\"],[\"ucstate_test\",\"sc_replace_view_function\"]]",
+        "view.schemaMode": "COMPENSATION",
+        "view.sqlConfig.runtime.databricks.sql.functions.counter_diff.enabled": "true",
+        "view.sqlConfig.runtime.databricks.sql.functions.time_bucket.enabled": "true",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.initialSize": "4",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.maxRetries": "100",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.partitionJitterEnabled": "true",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.retriableInvokeStatusCodes": "UNAVAILABLE,RESOURCE_EXHAUSTED,DEADLINE_EXCEEDED,ABORTED,CANCELLED",
+        "view.sqlConfig.spark.databricks.ai.adaptiveBatch.retryMaxDelayMs": "120000",
+        "view.sqlConfig.spark.databricks.ai.grpc.sync.retriableStatusCodes": "UNAVAILABLE,RESOURCE_EXHAUSTED,DEADLINE_EXCEEDED,ABORTED,CANCELLED",
+        "view.sqlConfig.spark.databricks.docingest.apdfl.sandbox.enabled": "false",
+        "view.sqlConfig.spark.databricks.docingest.batchEval.size": "8",
+        "view.sqlConfig.spark.databricks.docingest.contentElementTypes.excluded": "",
+        "view.sqlConfig.spark.databricks.docingest.maxDocumentPages": "1000",
+        "view.sqlConfig.spark.databricks.docingest.pagination.concurrency": "1",
+        "view.sqlConfig.spark.databricks.docingest.pdf.drawFlags": "USE_ANNOT_FACES",
+        "view.sqlConfig.spark.databricks.docingest.stage2.descriptionModel": "databricks-gemma-3-12b",
+        "view.sqlConfig.spark.databricks.docingest.version.default": "2.0",
+        "view.sqlConfig.spark.databricks.sql.ai.hermes.embeddingBatch.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.aimdLimiter.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.aimdLimiter.max": "200",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.globalMaxInFlightElements": "10240",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxBufferedResults": "512",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxInFlightElements": "200",
+        "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxWaitTimeSeconds": "172800",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.initialRetryInterval": "100",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.maxRetryInterval": "10000",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.retryIntervalJitterFactor": "1.0",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.richArguments.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.hermes.extendedTypeConversion.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.expression.aiFunctions.repartition": "0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiDetectAnomalies.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiForecast.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiForecastV2.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiForecastV2.modelPath": "/Volumes/system/__internal_ai/ai_forecast_volume/forecaster_v5",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.aclValidateAllFunctions": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.clusterSizeBasedGlobalParallelism.scaleFactor": "512.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.debugLogEnabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.dynamicPoolSizeEnabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.maxPoolSize": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.maxPoolSize.aiParseDocument": "64",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdCurrentQpsIncreaseRatio": "0.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdSuccessRatio": "0.95",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdTotalQpsIncreaseRatio": "0.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.taskWaitTimeInSeconds": "1000",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.threadKeepAliveTimeInSeconds": "600",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.useDynamicTaskQueueExecutor": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.aiQuery.embedding.request.size": "40",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.execution.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.execution.size": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchInferenceApi.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchSession.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchSession.terminate.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.createBatchSessionOnExecutor": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.decimal.dataType.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.disabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.embeddingsEndpointName": "databricks-gte-large-en",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.extract.tileMetadata.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.grpc.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.directBuilder.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.failOnError.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.files.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.errorTemplate.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.partitionProcessorConf.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermesEnabledFunctions": "ai_classify,ai_extract,ai_prep_search,ai_parse_document,ai_search,ai_query,ai_mask,ai_enrich,ai_transcribe,ai_summarize,ai_fix_grammar,ai_analyze_sentiment,ai_translate,ai_decide",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.includeWorkspaceUrl": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.model.parameters.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.modelEndpointTypeParsing.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.multiModality.model.list": "databricks-llama-4-maverick,databricks-claude-sonnet-4,databricks-claude-3-7-sonnet,databricks-gemma-3-12b,databricks-gpt-5,databricks-gpt-5-mini,databricks-gpt-5-nano,databricks-gpt-5-1,databricks-gpt-5-2,databricks-gemini-2-5-flash,databricks-gemini-2-5-pro,databricks-gemini-3-flash,databricks-gemini-3-pro,databricks-claude-haiku-4-5",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.multiModality.useCapabilitiesApi": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.nullInputJsonOutput": "{\"response\":null,\"error_message\":null}",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.purposeBuiltFunctions.batch.execution.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.purposeBuiltFunctions.translate.instruction": "### Instruction\n\nTranslate the provided text to %s, and output only the translated text\nin the target language in this format: <DBSQLAI>translated text</DBSQLAI>.\n\nIf the text is already in the target language, output the provided text.\n\n### Text\n\n%s",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.registry.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteFunction.grpc.batch.maxConcurrentRequests": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteHttpClient.maxConnections": "2048",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteHttpClient.timeoutInSeconds": "360",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.safe.inference.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.scalingReasonLogging.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.similarity.batch.execution.enabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.useDedicatedHttpClient": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.useGrpcForSessionManagement": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.initialRetryIntervalMillis": "1000",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.maxRetryInterval": "120000",
+        "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.retryIntervalMultiplierFactor": "2.0",
+        "view.sqlConfig.spark.databricks.sql.functions.aiGen.endpointName": "databricks-meta-llama-3-3-70b-instruct",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.hybrid.reasoning.foundation.model.list": "databricks-claude-3-7-sonnet,databricks-gemini-2-5-pro,databricks-gemini-2-5-flash,databricks-gemini-3-flash",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.openAI.oSeries.model.list": "o1-mini,o1,o3-mini,o3,o4-mini,gpt-5,gpt-5-mini,gpt-5-nano,GPT-5,GPT-5 Mini,GPT-5 Nano",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.temperature.whitelistMode.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.aiQuery.ucModelService.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.byEmbeddingVector.enabled": "false",
+        "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.enabled": "true",
+        "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.use.indexIdentifierOnly": "true",
+        "view.sqlConfig.spark.databricks.sql.rowColumnAccess.useEffectivePolicies.enabled": "true",
+        "view.sqlConfig.spark.sql.analyzer.dontDeduplicateExpressionIfExprIdInOutput": "false",
+        "view.sqlConfig.spark.sql.ansi.enabled": "true",
+        "view.sqlConfig.spark.sql.ansi.enforceAnsiTypeCoercion": "true",
+        "view.sqlConfig.spark.sql.ansi.enforceReservedKeywords": "false",
+        "view.sqlConfig.spark.sql.artifact.includeClusterScopedJars": "false",
+        "view.sqlConfig.spark.sql.artifact.isolation.enabled": "false",
+        "view.sqlConfig.spark.sql.avro.datetimeRebaseModeInRead": "LEGACY",
+        "view.sqlConfig.spark.sql.avro.datetimeRebaseModeInWrite": "LEGACY",
+        "view.sqlConfig.spark.sql.columnVector.offheap.enabled": "true",
+        "view.sqlConfig.spark.sql.copyInto.timeout.threadDump.enabled": "false",
+        "view.sqlConfig.spark.sql.cte.recursion.enabled": "true",
+        "view.sqlConfig.spark.sql.datetime.java8API.enabled": "true",
+        "view.sqlConfig.spark.sql.defaultStorage.useDefaultStorageForCreateCatalogWithoutLocation.enabled": "true",
+        "view.sqlConfig.spark.sql.excel.streaming.enabled": "true",
+        "view.sqlConfig.spark.sql.fileType.enabled": "true",
+        "view.sqlConfig.spark.sql.functions.remoteHttpClient.redirectLogging.enabled": "true",
+        "view.sqlConfig.spark.sql.functions.remoteHttpClient.retryOn400TimeoutError": "true",
+        "view.sqlConfig.spark.sql.functions.remoteHttpClient.retryOnSocketTimeoutException": "true",
+        "view.sqlConfig.spark.sql.hive.convertCTAS": "true",
+        "view.sqlConfig.spark.sql.insertIntoReplaceUsing.disallowMisalignedColumns.enabled": "true",
+        "view.sqlConfig.spark.sql.insertIntoReplaceUsing.oldDPOCodePath.enabled": "true",
+        "view.sqlConfig.spark.sql.legacy.blockCreateTempTableUsingProvider": "true",
+        "view.sqlConfig.spark.sql.legacy.codingErrorAction": "true",
+        "view.sqlConfig.spark.sql.legacy.createHiveTableByDefault": "false",
+        "view.sqlConfig.spark.sql.legacy.observeMetricsAggregateAllAttempts": "true",
+        "view.sqlConfig.spark.sql.legacy.useLegacyXMLParser.migrationValidation.enabled": "false",
+        "view.sqlConfig.spark.sql.orc.compression.codec": "snappy",
+        "view.sqlConfig.spark.sql.parquet.compression.codec": "snappy",
+        "view.sqlConfig.spark.sql.parquet.datetimeRebaseModeInRead": "LEGACY",
+        "view.sqlConfig.spark.sql.parquet.datetimeRebaseModeInWrite": "LEGACY",
+        "view.sqlConfig.spark.sql.path.enabled": "true",
+        "view.sqlConfig.spark.sql.photon.skipIndexForTextSearch.indexingBitmapAgg.forceSerializedOutput": "false",
+        "view.sqlConfig.spark.sql.photon.skipIndexForTextSearch.indexingBitmapAndAgg.enabled": "true",
+        "view.sqlConfig.spark.sql.pivot.emptyBucketReturnsAggregateDefault": "false",
+        "view.sqlConfig.spark.sql.scripting.enabled": "true",
+        "view.sqlConfig.spark.sql.scripting.maxNumberOfCharacters": "1000000",
+        "view.sqlConfig.spark.sql.scripting.maxNumberOfLines": "30000",
+        "view.sqlConfig.spark.sql.searchIndex.alterColumnSyntax.enabled": "true",
+        "view.sqlConfig.spark.sql.searchIndex.clusterBy.enabled": "true",
+        "view.sqlConfig.spark.sql.searchIndex.clusterBy.generalization.enabled": "true",
+        "view.sqlConfig.spark.sql.secondaryIndex.asyncCreation.enabled": "false",
+        "view.sqlConfig.spark.sql.secondaryIndex.manualRefresh.disabled": "false",
+        "view.sqlConfig.spark.sql.secondaryIndex.rowIdWatermark.enabled": "true",
+        "view.sqlConfig.spark.sql.secondaryIndex.showInDescribeTable": "true",
+        "view.sqlConfig.spark.sql.secondaryIndex.ucIntegration.enabled": "true",
+        "view.sqlConfig.spark.sql.session.timeZone": "Etc/UTC",
+        "view.sqlConfig.spark.sql.shuffleDependency.skipMigration.enabled": "true",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.enabled": "true",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.incremental.maxBytesThreshold": "10000000000000",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.ngramIndex.parameterCalculation": "true",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.patternBucketCount": "524288",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.rowsBatchSize": "32",
+        "view.sqlConfig.spark.sql.skipIndexForTextSearch.v2.enabled": "true",
+        "view.sqlConfig.spark.sql.sources.commitProtocolClass": "com.databricks.sql.transaction.directory.DirectoryAtomicCommitProtocol",
+        "view.sqlConfig.spark.sql.sources.default": "delta",
+        "view.sqlConfig.spark.sql.sqlgateway.retry.readyOnlyCommands.v2.enabled": "true",
+        "view.sqlConfig.spark.sql.sqlgateway.retry.stateChangingCommands.enabled": "true",
+        "view.sqlConfig.spark.sql.sqlgateway.retryFailFastModeEnabled": "true",
+        "view.sqlConfig.spark.sql.standardIndex.costBasedSelection.enabled": "true",
+        "view.sqlConfig.spark.sql.standardIndex.enabled": "false",
+        "view.sqlConfig.spark.sql.streaming.checkpoint.fileChecksum.enabled": "false",
+        "view.sqlConfig.spark.sql.streaming.optimizer.subqueryEarlyUnnesting.enabled": "false",
+        "view.sqlConfig.spark.sql.streaming.stopTimeout": "15s",
+        "view.sqlConfig.spark.sql.thriftServer.interruptOnCancel": "true",
+        "view.sqlConfig.spark.sql.thriftServer.queryTimeout": "0",
+        "view.sqlConfig.spark.sql.thriftserver.scheduler.pool": "thriftserver-session-00000000-0000-0000-0000-000000000019",
+        "view.sqlConfig.spark.sql.timeType.enabled": "true",
+        "view.sqlConfig.spark.sql.timestampNanosTypes.enabled": "false",
+        "view.sqlConfig.spark.sql.validateColumnNamesSync.throwException": "true",
+        "view.sqlConfig.spark.sql.variable.substitute": "false",
+        "view.sqlConfig.spark.sql.variant.pushVariantIntoScan": "true",
+        "view.sqlConfig.spark.sql.variant.pushVariantIntoScan.deferCastError": "true",
+        "view.sqlConfig.spark.sql.variant.writeShredding.enabled": "true",
+        "view.sqlConfig.spark.sql.vectorIndex.enabled": "false",
+        "view.sqlConfig.spark.sql.vectorIndex.numCentroidsScalingFactor": "4",
+        "view.sqlConfig.spark.sql.vectorIndex.optimization.enabled": "false",
+        "view.sqlConfig.spark.sql.vectorIndex.optimization.enabledForCommands": "false",
+        "view.sqlConfig.spark.thriftserver.cloudStoreBasedRowSet.arrowRowLevelByteTrimming": "false"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000015",
+       "schema_name": "sc_replace_view_function",
+       "table_id": "00000000-0000-0000-0000-000000000020",
+       "table_type": "VIEW",
+       "updated_at": 1793468968215,
+       "updated_by": "owner@example.com",
+       "view_definition": "SELECT order_id, amount FROM sc_replace_view_function.orders WHERE status = 'open'",
+       "view_dependencies": {
+        "dependencies": [
+         {
+          "table": {
+           "table_full_name": "ucstate_test.sc_replace_view_function.orders"
+          }
+         }
+        ]
+       }
+      },
+      "tags": {
+       "domain": "sales"
+      }
+     },
+     "orders": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "order_id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        },
+        {
+         "column_masks": {},
+         "name": "status",
+         "nullable": true,
+         "position": 2,
+         "type_json": "{\"name\":\"status\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ],
+       "created_at": 1793468966116,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_replace_view_function.orders",
+       "name": "orders",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793468966000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000021",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000022"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000015",
+       "schema_name": "sc_replace_view_function",
+       "table_id": "00000000-0000-0000-0000-000000000023",
+       "table_type": "MANAGED",
+       "updated_at": 1793468966116,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "127e6f58d520b7b84ed795fa205f0726d0791b8c3370462cc60fd400a50bd149",
+ "prechecks": {}
+}

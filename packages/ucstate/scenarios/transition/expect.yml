@@ -1,0 +1,7 @@
+description: A transition script narrows a type from the table's own rows, and lands on the source.
+covers: [rewrite]
+classes: [rewrite]
+contains:
+  - CAST(qty AS INT) AS qty
+rows:
+  - {query: "SELECT sum(qty) FROM sc_transition.t", result: 12}

@@ -1,0 +1,11 @@
+description: Nullable columns are added in place, one with a default, comment and tag.
+covers: [add_nullable_column]
+classes: [auto]
+contains:
+  - ADD COLUMN note STRING COMMENT 'Free text' AFTER order_id
+  - ALTER COLUMN note SET DEFAULT 'none'
+  - ADD COLUMN shipped BOOLEAN
+rows:
+  - {query: "SELECT count(*) FROM sc_add_columns.orders", result: 3}
+  - {query: "SELECT count(*) FROM sc_add_columns.orders WHERE note IS NULL", result: 3}
+  - {query: "SELECT sum(amount) FROM sc_add_columns.orders", result: "60.00"}

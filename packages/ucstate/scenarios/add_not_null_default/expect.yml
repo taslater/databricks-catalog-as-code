@@ -1,0 +1,10 @@
+description: A NOT NULL column with a default is added in four statements, filling the rows.
+covers: [add_not_null_default]
+classes: [checked]
+contains:
+  - ALTER TABLE sc_add_not_null_default.t ADD COLUMN status STRING COMMENT 'Lifecycle'
+  - ALTER TABLE sc_add_not_null_default.t ALTER COLUMN status SET DEFAULT 'new'
+  - UPDATE sc_add_not_null_default.t SET status = DEFAULT WHERE status IS NULL
+  - ALTER TABLE sc_add_not_null_default.t ALTER COLUMN status SET NOT NULL
+rows:
+  - {query: "SELECT count(*) FROM sc_add_not_null_default.t WHERE status = 'new'", result: 2}

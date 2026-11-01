@@ -1,0 +1,7 @@
+description: A one-time post script fixes rows once, after the schema change.
+covers: []
+classes: [auto, script]
+contains:
+  - UPDATE sc_once_script.t SET status = 'new' WHERE status = 'old'
+rows:
+  - {query: "SELECT count(*) FROM sc_once_script.t WHERE status = 'new'", result: 2}

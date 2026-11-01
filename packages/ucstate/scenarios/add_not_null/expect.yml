@@ -1,0 +1,9 @@
+description: NOT NULL is set on a column whose rows have no NULL, once its precheck passes.
+covers: [add_not_null]
+classes: [checked]
+contains:
+  - ALTER TABLE sc_add_not_null.t ALTER COLUMN x SET NOT NULL
+says:
+  - "precheck (passed): SELECT count_if(x IS NULL)"
+rows:
+  - {query: "SELECT count(*) FROM sc_add_not_null.t", result: 2}

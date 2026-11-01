@@ -1,0 +1,1 @@
+CREATE SCHEMA sc_replace_view_function;

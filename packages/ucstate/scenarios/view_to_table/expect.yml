@@ -1,0 +1,6 @@
+description: A view becomes a table of the same name; the view is dropped first.
+covers: []
+classes: [auto]
+contains:
+  - DROP VIEW sc_view_to_table.thing
+  - CREATE TABLE sc_view_to_table.thing

@@ -1,0 +1,226 @@
+{
+ "after": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_control_add_check": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469269949,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_control_add_check",
+     "name": "sc_control_add_check",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000001",
+     "updated_at": 1793469271888,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ],
+       "created_at": 1793469271768,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_control_add_check.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.constraints.amount_positive": "amount > 0",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.checkConstraints": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469273000",
+        "delta.lastUpdateVersion": "1",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000003",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000004"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000001",
+       "schema_name": "sc_control_add_check",
+       "table_id": "00000000-0000-0000-0000-000000000005",
+       "table_type": "MANAGED",
+       "updated_at": 1793469272794,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "before": {
+  "catalog": "ucstate_test",
+  "schemas": {
+   "sc_control_add_check": {
+    "functions": {},
+    "grants": {},
+    "info": {
+     "catalog_name": "ucstate_test",
+     "catalog_type": "MANAGED_CATALOG",
+     "comment": "",
+     "created_at": 1793469279410,
+     "created_by": "owner@example.com",
+     "full_name": "ucstate_test.sc_control_add_check",
+     "name": "sc_control_add_check",
+     "owner": "owner@example.com",
+     "properties": {
+      "collation": "UTF8_BINARY",
+      "owner": "root"
+     },
+     "schema_id": "00000000-0000-0000-0000-000000000006",
+     "updated_at": 1793469281334,
+     "updated_by": "00000000-0000-0000-0000-000000000002"
+    },
+    "tables": {
+     "t": {
+      "column_tags": {},
+      "grants": {},
+      "info": {
+       "catalog_name": "ucstate_test",
+       "columns": [
+        {
+         "column_masks": {},
+         "name": "id",
+         "nullable": true,
+         "position": 0,
+         "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "column_masks": {},
+         "name": "amount",
+         "nullable": true,
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ],
+       "created_at": 1793469281093,
+       "created_by": "owner@example.com",
+       "data_source_format": "DELTA",
+       "full_name": "ucstate_test.sc_control_add_check.t",
+       "name": "t",
+       "owner": "owner@example.com",
+       "properties": {
+        "collation": "UTF8_BINARY",
+        "delta.checkpoint.writeStatsAsJson": "false",
+        "delta.checkpoint.writeStatsAsStruct": "true",
+        "delta.enableDeletionVectors": "true",
+        "delta.enableRowTracking": "true",
+        "delta.feature.appendOnly": "supported",
+        "delta.feature.deletionVectors": "supported",
+        "delta.feature.domainMetadata": "supported",
+        "delta.feature.invariants": "supported",
+        "delta.feature.rowTracking": "supported",
+        "delta.lastCommitTimestamp": "1793469281000",
+        "delta.lastUpdateVersion": "0",
+        "delta.minReaderVersion": "3",
+        "delta.minWriterVersion": "7",
+        "delta.parquet.compression.codec": "zstd",
+        "delta.parquet.format.version": "2.12.0",
+        "delta.parquet.format.version.afe.internal": "2.12.0",
+        "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000007",
+        "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000008",
+        "spark.sql.statistics.auxiliaryInfo": "{\"source\":\"AUTO_STATS\"}",
+        "spark.sql.statistics.colStats.amount.avgLen": "8",
+        "spark.sql.statistics.colStats.amount.createdAt": "1793469282273",
+        "spark.sql.statistics.colStats.amount.createdBy": "root",
+        "spark.sql.statistics.colStats.amount.distinctCount": "1",
+        "spark.sql.statistics.colStats.amount.max": "5.00",
+        "spark.sql.statistics.colStats.amount.maxLen": "8",
+        "spark.sql.statistics.colStats.amount.min": "5.00",
+        "spark.sql.statistics.colStats.amount.nullCount": "1",
+        "spark.sql.statistics.colStats.amount.rowCount": "2",
+        "spark.sql.statistics.colStats.amount.version": "2",
+        "spark.sql.statistics.colStats.id.avgLen": "8",
+        "spark.sql.statistics.colStats.id.createdAt": "1793469282273",
+        "spark.sql.statistics.colStats.id.createdBy": "root",
+        "spark.sql.statistics.colStats.id.distinctCount": "2",
+        "spark.sql.statistics.colStats.id.max": "2",
+        "spark.sql.statistics.colStats.id.maxLen": "8",
+        "spark.sql.statistics.colStats.id.min": "1",
+        "spark.sql.statistics.colStats.id.nullCount": "0",
+        "spark.sql.statistics.colStats.id.rowCount": "2",
+        "spark.sql.statistics.colStats.id.version": "2",
+        "spark.sql.statistics.createdAt": "1793469282273",
+        "spark.sql.statistics.createdBy": "root",
+        "spark.sql.statistics.numRows": "2",
+        "spark.sql.statistics.totalSize": "1193",
+        "spark.sql.statistics.version": "2"
+       },
+       "row_filters": {},
+       "schema_id": "00000000-0000-0000-0000-000000000006",
+       "schema_name": "sc_control_add_check",
+       "table_id": "00000000-0000-0000-0000-000000000009",
+       "table_type": "MANAGED",
+       "updated_at": 1793469282832,
+       "updated_by": "owner@example.com"
+      },
+      "tags": {}
+     }
+    },
+    "tags": {},
+    "volumes": {}
+   }
+  }
+ },
+ "inputs": "ddf84c395e90f4236cb76918b06ab6a853c6d30dd81ccd6a00b1aa87e838d43b",
+ "prechecks": {
+  "SELECT count_if(NOT coalesce((amount > 0), false)) AS violations FROM sc_control_add_check.t": 1
+ }
+}

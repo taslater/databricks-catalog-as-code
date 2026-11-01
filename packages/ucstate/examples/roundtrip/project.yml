@@ -1,0 +1,6 @@
+# Synthetic objects from ucmodel's samples/roundtrip.sql, imported by
+# `ucstate import` for the Phase 1 round trip.
+shadow: {catalog: ucstate_shadow}
+schemas: [roundtrip]
+targets:
+  test: {catalog: ucstate_test}

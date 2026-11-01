@@ -1,0 +1,7 @@
+description: A changed view and functions are replaced, and their grants and tags come back.
+covers: [replace_view_function]
+classes: [auto]
+contains:
+  - CREATE OR REPLACE VIEW sc_replace_view_function.open_orders
+  - CREATE OR REPLACE FUNCTION sc_replace_view_function.net
+  - CREATE OR REPLACE FUNCTION sc_replace_view_function.mask_status

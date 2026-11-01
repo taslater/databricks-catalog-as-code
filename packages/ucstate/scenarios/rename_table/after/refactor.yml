@@ -1,0 +1,2 @@
+- id: 2026-11-01-accounts
+  rename_table: {from: sc_rename_table.parent, to: sc_rename_table.accounts}

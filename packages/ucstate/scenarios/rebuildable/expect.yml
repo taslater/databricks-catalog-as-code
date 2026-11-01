@@ -1,0 +1,10 @@
+description: A rebuildable table whose query changes is replaced from its file, rows and all.
+covers: [rebuildable]
+classes: [auto]
+contains:
+  - CREATE OR REPLACE TABLE sc_rebuildable.totals
+  - "'ucstate.rebuild'"
+says:
+  - "rebuild ("
+rows:
+  - {query: "SELECT sum(orders) FROM sc_rebuildable.totals", result: 3}

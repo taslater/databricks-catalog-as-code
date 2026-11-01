@@ -1,0 +1,14 @@
+# The catalog this repo deploys. Every object is synthetic.
+#
+# Locally: DATABRICKS_WAREHOUSE_ID=<warehouse id> \
+#   ucstate --project catalog --profile <profile> plan --target dev
+# CI plans prod on a pull request and applies it on a merge to main
+# (.github/workflows). Nothing else applies prod.
+shadow: {catalog: ucstate_shadow}
+schemas: [shop]
+targets:
+  dev: {catalog: ucstate_dev}
+  prod: {catalog: ucstate_prod}
+# An apply whose plan depends on the rows (a precheck, a transition or a
+# one-time script) runs it on shallow clones here first.
+rehearsal: {catalog: ucstate_rehearsal}

@@ -1,0 +1,6 @@
+# The lineage probe's schema (probes/lineage_workload.sql), imported by
+# `ucstate import` for the Phase 1 round trip.
+shadow: {catalog: ucstate_shadow}
+schemas: [probe_lineage]
+targets:
+  probe: {catalog: workspace}

@@ -1,0 +1,7 @@
+description: Cluster keys change, and a table without a declared CLUSTER BY is left alone.
+covers: [clustering]
+classes: [auto]
+contains:
+  - ALTER TABLE sc_clustering.t1 CLUSTER BY (b)
+  - ALTER TABLE sc_clustering.t2 CLUSTER BY AUTO
+  - ALTER TABLE sc_clustering.t4 CLUSTER BY (b)

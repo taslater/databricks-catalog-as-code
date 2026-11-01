@@ -1,0 +1,9 @@
+description: An allowance drops a column, with the column mapping the source declares.
+covers: [rename_drop_column]
+allow:
+  - drop_column: sc_drop_column.t.legacy
+classes: [one-way, destructive]
+contains:
+  - ALTER TABLE sc_drop_column.t DROP COLUMN legacy
+rows:
+  - {query: "SELECT count(keep) FROM sc_drop_column.t", result: 2}

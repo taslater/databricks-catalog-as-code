@@ -1,0 +1,11 @@
+description: Keys are added, dropped and changed; a changed PK takes its FKs down and back.
+covers: [keys, relax]
+classes: [auto]
+contains:
+  - ALTER TABLE sc_constraints.child DROP CONSTRAINT child_parent_fk
+  - PRIMARY KEY (id) RELY
+  - ALTER TABLE sc_constraints.checked DROP CONSTRAINT x_positive
+  - ADD CONSTRAINT people_manager_fk
+  - CREATE TABLE sc_constraints.links
+rows:
+  - {query: "SELECT count(*) FROM sc_constraints.child", result: 2}

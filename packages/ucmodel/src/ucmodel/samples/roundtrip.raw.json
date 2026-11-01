@@ -1,0 +1,1066 @@
+{
+ "catalog": "ucstate_test",
+ "schemas": {
+  "roundtrip": {
+   "functions": {
+    "add_tax": {
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "created_at": 1793392912141,
+      "created_by": "owner@example.com",
+      "data_type": "DOUBLE",
+      "full_data_type": "DOUBLE",
+      "full_name": "ucstate_test.roundtrip.add_tax",
+      "function_id": "00000000-0000-0000-0000-000000000001",
+      "input_params": {
+       "parameters": [
+        {
+         "name": "amount",
+         "parameter_type": "PARAM",
+         "position": 0,
+         "type_json": "{\"name\":\"amount\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DOUBLE",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "double"
+        },
+        {
+         "comment": "Tax rate as a fraction",
+         "name": "rate",
+         "parameter_default": "0.2",
+         "parameter_type": "PARAM",
+         "position": 1,
+         "type_json": "{\"name\":\"rate\",\"type\":\"double\",\"nullable\":true,\"metadata\":{\"default\":\"0.2\",\"comment\":\"Tax rate as a fraction\"}}",
+         "type_name": "DOUBLE",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "double"
+        }
+       ]
+      },
+      "is_deterministic": true,
+      "name": "add_tax",
+      "owner": "owner@example.com",
+      "parameter_style": "S",
+      "routine_body": "SQL",
+      "routine_definition": "amount * (1 + rate)",
+      "schema_name": "roundtrip",
+      "security_type": "DEFINER",
+      "specific_name": "add_tax",
+      "sql_data_access": "CONTAINS_SQL",
+      "updated_at": 1793392912141,
+      "updated_by": "owner@example.com"
+     }
+    },
+    "big_orders": {
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "created_at": 1793392938330,
+      "created_by": "owner@example.com",
+      "data_type": "TABLE_TYPE",
+      "full_data_type": "(order_id BIGINT, amount DECIMAL(10,2))",
+      "full_name": "ucstate_test.roundtrip.big_orders",
+      "function_id": "00000000-0000-0000-0000-000000000002",
+      "input_params": {
+       "parameters": [
+        {
+         "name": "threshold",
+         "parameter_type": "PARAM",
+         "position": 0,
+         "type_json": "{\"name\":\"threshold\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ]
+      },
+      "is_deterministic": true,
+      "name": "big_orders",
+      "owner": "owner@example.com",
+      "parameter_style": "S",
+      "return_params": {
+       "parameters": [
+        {
+         "name": "order_id",
+         "parameter_type": "COLUMN",
+         "position": 0,
+         "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "LONG",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "bigint"
+        },
+        {
+         "name": "amount",
+         "parameter_type": "COLUMN",
+         "position": 1,
+         "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "DECIMAL",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "decimal(10,2)"
+        }
+       ]
+      },
+      "routine_body": "SQL",
+      "routine_definition": "SELECT order_id, amount FROM ucstate_test.roundtrip.orders WHERE amount > threshold",
+      "schema_name": "roundtrip",
+      "security_type": "DEFINER",
+      "specific_name": "big_orders",
+      "sql_data_access": "READS_SQL_DATA",
+      "updated_at": 1793392938330,
+      "updated_by": "owner@example.com"
+     }
+    },
+    "mask_email": {
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "comment": "Keeps only the domain",
+      "created_at": 1793392910835,
+      "created_by": "owner@example.com",
+      "data_type": "STRING",
+      "full_data_type": "STRING COLLATE UTF8_BINARY",
+      "full_name": "ucstate_test.roundtrip.mask_email",
+      "function_id": "00000000-0000-0000-0000-000000000003",
+      "input_params": {
+       "parameters": [
+        {
+         "name": "email",
+         "parameter_type": "PARAM",
+         "position": 0,
+         "type_json": "{\"name\":\"email\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string collate UTF8_BINARY"
+        }
+       ]
+      },
+      "is_deterministic": true,
+      "name": "mask_email",
+      "owner": "owner@example.com",
+      "parameter_style": "S",
+      "routine_body": "SQL",
+      "routine_definition": "concat('***@', substring_index(email, '@', -1))",
+      "schema_name": "roundtrip",
+      "security_type": "DEFINER",
+      "specific_name": "mask_email",
+      "sql_data_access": "CONTAINS_SQL",
+      "updated_at": 1793392910835,
+      "updated_by": "owner@example.com"
+     }
+    },
+    "slugify": {
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "created_at": 1793392912773,
+      "created_by": "owner@example.com",
+      "data_type": "STRING",
+      "external_language": "Python",
+      "full_data_type": "STRING COLLATE UTF8_BINARY",
+      "full_name": "ucstate_test.roundtrip.slugify",
+      "function_id": "00000000-0000-0000-0000-000000000004",
+      "input_params": {
+       "parameters": [
+        {
+         "name": "s",
+         "parameter_type": "PARAM",
+         "position": 0,
+         "type_json": "{\"name\":\"s\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string"
+        }
+       ]
+      },
+      "is_deterministic": false,
+      "name": "slugify",
+      "owner": "owner@example.com",
+      "parameter_style": "S",
+      "routine_body": "EXTERNAL",
+      "routine_definition": "\nreturn s.lower().replace(' ', '-')\n",
+      "schema_name": "roundtrip",
+      "security_type": "DEFINER",
+      "specific_name": "slugify",
+      "sql_data_access": "NO_SQL",
+      "updated_at": 1793392912773,
+      "updated_by": "owner@example.com"
+     }
+    },
+    "visible_region": {
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "created_at": 1793392911519,
+      "created_by": "owner@example.com",
+      "data_type": "BOOLEAN",
+      "full_data_type": "BOOLEAN",
+      "full_name": "ucstate_test.roundtrip.visible_region",
+      "function_id": "00000000-0000-0000-0000-000000000005",
+      "input_params": {
+       "parameters": [
+        {
+         "name": "region",
+         "parameter_type": "PARAM",
+         "position": 0,
+         "type_json": "{\"name\":\"region\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+         "type_name": "STRING",
+         "type_precision": 0,
+         "type_scale": 0,
+         "type_text": "string collate UTF8_BINARY"
+        }
+       ]
+      },
+      "is_deterministic": true,
+      "name": "visible_region",
+      "owner": "owner@example.com",
+      "parameter_style": "S",
+      "routine_body": "SQL",
+      "routine_definition": "region <> 'hidden'",
+      "schema_name": "roundtrip",
+      "security_type": "DEFINER",
+      "specific_name": "visible_region",
+      "sql_data_access": "CONTAINS_SQL",
+      "updated_at": 1793392911519,
+      "updated_by": "owner@example.com"
+     }
+    }
+   },
+   "grants": {
+    "account users": [
+     "USE_SCHEMA"
+    ]
+   },
+   "info": {
+    "catalog_name": "ucstate_test",
+    "catalog_type": "MANAGED_CATALOG",
+    "comment": "Round-trip coverage for ucstate import",
+    "created_at": 1793392908930,
+    "created_by": "owner@example.com",
+    "full_name": "ucstate_test.roundtrip",
+    "name": "roundtrip",
+    "owner": "owner@example.com",
+    "properties": {
+     "collation": "UTF8_BINARY",
+     "owner": "root"
+    },
+    "schema_id": "00000000-0000-0000-0000-000000000006",
+    "updated_at": 1793392910789,
+    "updated_by": "00000000-0000-0000-0000-000000000007"
+   },
+   "tables": {
+    "customer_orders": {
+     "column_tags": {},
+     "grants": {
+      "account users": [
+       "SELECT"
+      ]
+     },
+     "info": {
+      "catalog_name": "ucstate_test",
+      "columns": [
+       {
+        "column_masks": {},
+        "comment": "Customer key",
+        "name": "customer_id",
+        "nullable": false,
+        "position": 0,
+        "type_json": "{\"name\":\"customer_id\",\"type\":\"long\",\"nullable\":false,\"metadata\":{\"comment\":\"Customer key\"}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       },
+       {
+        "column_masks": {},
+        "name": "name",
+        "nullable": true,
+        "position": 1,
+        "type_json": "{\"name\":\"name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}",
+        "type_name": "STRING",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "string"
+       },
+       {
+        "column_masks": {},
+        "name": "orders",
+        "nullable": false,
+        "position": 2,
+        "type_json": "{\"name\":\"orders\",\"type\":\"long\",\"nullable\":false,\"metadata\":{}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       }
+      ],
+      "comment": "Orders per customer",
+      "created_at": 1793392939046,
+      "created_by": "owner@example.com",
+      "full_name": "ucstate_test.roundtrip.customer_orders",
+      "name": "customer_orders",
+      "owner": "owner@example.com",
+      "properties": {
+       "collation": "UTF8_BINARY",
+       "view.catalogAndNamespace.numParts": "2",
+       "view.catalogAndNamespace.part.0": "workspace",
+       "view.catalogAndNamespace.part.1": "default",
+       "view.query.out.col.0": "customer_id",
+       "view.query.out.col.1": "name",
+       "view.query.out.col.2": "orders",
+       "view.query.out.numCols": "3",
+       "view.referredTempFunctionsNames": "[]",
+       "view.referredTempTableNames": "[]",
+       "view.referredTempVariablesNames": "[]",
+       "view.referredTempViewNames": "[]",
+       "view.resolutionPath": "[[\"system\",\"builtin\"],[\"system\",\"ai\"],[\"workspace\",\"default\"]]",
+       "view.schemaMode": "BINDING",
+       "view.sqlConfig.runtime.databricks.sql.functions.counter_diff.enabled": "true",
+       "view.sqlConfig.runtime.databricks.sql.functions.time_bucket.enabled": "true",
+       "view.sqlConfig.spark.databricks.ai.adaptiveBatch.initialSize": "4",
+       "view.sqlConfig.spark.databricks.ai.adaptiveBatch.maxRetries": "100",
+       "view.sqlConfig.spark.databricks.ai.adaptiveBatch.partitionJitterEnabled": "true",
+       "view.sqlConfig.spark.databricks.ai.adaptiveBatch.retriableInvokeStatusCodes": "UNAVAILABLE,RESOURCE_EXHAUSTED,DEADLINE_EXCEEDED,ABORTED,CANCELLED",
+       "view.sqlConfig.spark.databricks.ai.adaptiveBatch.retryMaxDelayMs": "120000",
+       "view.sqlConfig.spark.databricks.ai.grpc.sync.retriableStatusCodes": "UNAVAILABLE,RESOURCE_EXHAUSTED,DEADLINE_EXCEEDED,ABORTED,CANCELLED",
+       "view.sqlConfig.spark.databricks.docingest.apdfl.sandbox.enabled": "false",
+       "view.sqlConfig.spark.databricks.docingest.batchEval.size": "8",
+       "view.sqlConfig.spark.databricks.docingest.contentElementTypes.excluded": "",
+       "view.sqlConfig.spark.databricks.docingest.maxDocumentPages": "1000",
+       "view.sqlConfig.spark.databricks.docingest.pagination.concurrency": "1",
+       "view.sqlConfig.spark.databricks.docingest.pdf.drawFlags": "USE_ANNOT_FACES",
+       "view.sqlConfig.spark.databricks.docingest.stage2.descriptionModel": "databricks-gemma-3-12b",
+       "view.sqlConfig.spark.databricks.docingest.version.default": "2.0",
+       "view.sqlConfig.spark.databricks.sql.ai.hermes.embeddingBatch.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.aimdLimiter.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.aimdLimiter.max": "200",
+       "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.globalMaxInFlightElements": "10240",
+       "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxBufferedResults": "512",
+       "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxInFlightElements": "200",
+       "view.sqlConfig.spark.databricks.sql.ai.partitionProcessor.maxWaitTimeSeconds": "172800",
+       "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.initialRetryInterval": "100",
+       "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.maxRetryInterval": "10000",
+       "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.retryIntervalJitterFactor": "1.0",
+       "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.grpc.richArguments.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.ai.remoteFunction.hermes.extendedTypeConversion.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.expression.aiFunctions.repartition": "0",
+       "view.sqlConfig.spark.databricks.sql.functions.aiDetectAnomalies.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiForecast.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiForecastV2.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiForecastV2.modelPath": "/Volumes/system/__internal_ai/ai_forecast_volume/forecaster_v5",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.aclValidateAllFunctions": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.clusterSizeBasedGlobalParallelism.scaleFactor": "512.0",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.debugLogEnabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.dynamicPoolSizeEnabled": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.maxPoolSize": "2048",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.maxPoolSize.aiParseDocument": "64",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdCurrentQpsIncreaseRatio": "0.0",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdSuccessRatio": "0.95",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.scaleUpThresholdTotalQpsIncreaseRatio": "0.0",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.taskWaitTimeInSeconds": "1000",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.threadKeepAliveTimeInSeconds": "600",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.adaptiveThreadPool.useDynamicTaskQueueExecutor": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.aiQuery.embedding.request.size": "40",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.execution.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batch.execution.size": "2048",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchInferenceApi.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchSession.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.batchSession.terminate.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.createBatchSessionOnExecutor": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.decimal.dataType.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.disabled": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.embeddingsEndpointName": "databricks-gte-large-en",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.extract.tileMetadata.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.grpc.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.directBuilder.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.failOnError.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.aiQuery.files.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.errorTemplate.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermes.partitionProcessorConf.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.hermesEnabledFunctions": "ai_classify,ai_extract,ai_prep_search,ai_parse_document,ai_search,ai_query,ai_mask,ai_enrich,ai_transcribe,ai_summarize,ai_fix_grammar,ai_analyze_sentiment,ai_translate,ai_decide",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.includeWorkspaceUrl": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.model.parameters.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.modelEndpointTypeParsing.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.multiModality.model.list": "databricks-llama-4-maverick,databricks-claude-sonnet-4,databricks-claude-3-7-sonnet,databricks-gemma-3-12b,databricks-gpt-5,databricks-gpt-5-mini,databricks-gpt-5-nano,databricks-gpt-5-1,databricks-gpt-5-2,databricks-gemini-2-5-flash,databricks-gemini-2-5-pro,databricks-gemini-3-flash,databricks-gemini-3-pro,databricks-claude-haiku-4-5",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.multiModality.useCapabilitiesApi": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.nullInputJsonOutput": "{\"response\":null,\"error_message\":null}",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.purposeBuiltFunctions.batch.execution.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.purposeBuiltFunctions.translate.instruction": "### Instruction\n\nTranslate the provided text to %s, and output only the translated text\nin the target language in this format: <DBSQLAI>translated text</DBSQLAI>.\n\nIf the text is already in the target language, output the provided text.\n\n### Text\n\n%s",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.registry.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteFunction.grpc.batch.maxConcurrentRequests": "2048",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteHttpClient.maxConnections": "2048",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.remoteHttpClient.timeoutInSeconds": "360",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.safe.inference.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.scalingReasonLogging.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.similarity.batch.execution.enabled": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.useDedicatedHttpClient": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.useGrpcForSessionManagement": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.initialRetryIntervalMillis": "1000",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.maxRetryInterval": "120000",
+       "view.sqlConfig.spark.databricks.sql.functions.aiFunctions.vectorSearch.retryIntervalMultiplierFactor": "2.0",
+       "view.sqlConfig.spark.databricks.sql.functions.aiGen.endpointName": "databricks-meta-llama-3-3-70b-instruct",
+       "view.sqlConfig.spark.databricks.sql.functions.aiQuery.hybrid.reasoning.foundation.model.list": "databricks-claude-3-7-sonnet,databricks-gemini-2-5-pro,databricks-gemini-2-5-flash,databricks-gemini-3-flash",
+       "view.sqlConfig.spark.databricks.sql.functions.aiQuery.openAI.oSeries.model.list": "o1-mini,o1,o3-mini,o3,o4-mini,gpt-5,gpt-5-mini,gpt-5-nano,GPT-5,GPT-5 Mini,GPT-5 Nano",
+       "view.sqlConfig.spark.databricks.sql.functions.aiQuery.temperature.whitelistMode.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.aiQuery.ucModelService.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.byEmbeddingVector.enabled": "false",
+       "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.enabled": "true",
+       "view.sqlConfig.spark.databricks.sql.functions.vectorSearch.use.indexIdentifierOnly": "true",
+       "view.sqlConfig.spark.databricks.sql.rowColumnAccess.useEffectivePolicies.enabled": "true",
+       "view.sqlConfig.spark.sql.analyzer.dontDeduplicateExpressionIfExprIdInOutput": "false",
+       "view.sqlConfig.spark.sql.ansi.enabled": "true",
+       "view.sqlConfig.spark.sql.ansi.enforceAnsiTypeCoercion": "true",
+       "view.sqlConfig.spark.sql.ansi.enforceReservedKeywords": "false",
+       "view.sqlConfig.spark.sql.artifact.includeClusterScopedJars": "false",
+       "view.sqlConfig.spark.sql.artifact.isolation.enabled": "false",
+       "view.sqlConfig.spark.sql.avro.datetimeRebaseModeInRead": "LEGACY",
+       "view.sqlConfig.spark.sql.avro.datetimeRebaseModeInWrite": "LEGACY",
+       "view.sqlConfig.spark.sql.columnVector.offheap.enabled": "true",
+       "view.sqlConfig.spark.sql.copyInto.timeout.threadDump.enabled": "false",
+       "view.sqlConfig.spark.sql.cte.recursion.enabled": "true",
+       "view.sqlConfig.spark.sql.datetime.java8API.enabled": "true",
+       "view.sqlConfig.spark.sql.defaultStorage.useDefaultStorageForCreateCatalogWithoutLocation.enabled": "true",
+       "view.sqlConfig.spark.sql.excel.streaming.enabled": "true",
+       "view.sqlConfig.spark.sql.fileType.enabled": "true",
+       "view.sqlConfig.spark.sql.functions.remoteHttpClient.redirectLogging.enabled": "true",
+       "view.sqlConfig.spark.sql.functions.remoteHttpClient.retryOn400TimeoutError": "true",
+       "view.sqlConfig.spark.sql.functions.remoteHttpClient.retryOnSocketTimeoutException": "true",
+       "view.sqlConfig.spark.sql.hive.convertCTAS": "true",
+       "view.sqlConfig.spark.sql.insertIntoReplaceUsing.disallowMisalignedColumns.enabled": "true",
+       "view.sqlConfig.spark.sql.insertIntoReplaceUsing.oldDPOCodePath.enabled": "true",
+       "view.sqlConfig.spark.sql.legacy.blockCreateTempTableUsingProvider": "true",
+       "view.sqlConfig.spark.sql.legacy.codingErrorAction": "true",
+       "view.sqlConfig.spark.sql.legacy.createHiveTableByDefault": "false",
+       "view.sqlConfig.spark.sql.legacy.observeMetricsAggregateAllAttempts": "true",
+       "view.sqlConfig.spark.sql.legacy.useLegacyXMLParser.migrationValidation.enabled": "false",
+       "view.sqlConfig.spark.sql.orc.compression.codec": "snappy",
+       "view.sqlConfig.spark.sql.parquet.compression.codec": "snappy",
+       "view.sqlConfig.spark.sql.parquet.datetimeRebaseModeInRead": "LEGACY",
+       "view.sqlConfig.spark.sql.parquet.datetimeRebaseModeInWrite": "LEGACY",
+       "view.sqlConfig.spark.sql.path.enabled": "true",
+       "view.sqlConfig.spark.sql.photon.skipIndexForTextSearch.indexingBitmapAgg.forceSerializedOutput": "false",
+       "view.sqlConfig.spark.sql.photon.skipIndexForTextSearch.indexingBitmapAndAgg.enabled": "true",
+       "view.sqlConfig.spark.sql.pivot.emptyBucketReturnsAggregateDefault": "false",
+       "view.sqlConfig.spark.sql.scripting.enabled": "true",
+       "view.sqlConfig.spark.sql.scripting.maxNumberOfCharacters": "1000000",
+       "view.sqlConfig.spark.sql.scripting.maxNumberOfLines": "30000",
+       "view.sqlConfig.spark.sql.searchIndex.alterColumnSyntax.enabled": "true",
+       "view.sqlConfig.spark.sql.searchIndex.clusterBy.enabled": "true",
+       "view.sqlConfig.spark.sql.searchIndex.clusterBy.generalization.enabled": "true",
+       "view.sqlConfig.spark.sql.secondaryIndex.asyncCreation.enabled": "false",
+       "view.sqlConfig.spark.sql.secondaryIndex.manualRefresh.disabled": "false",
+       "view.sqlConfig.spark.sql.secondaryIndex.rowIdWatermark.enabled": "true",
+       "view.sqlConfig.spark.sql.secondaryIndex.showInDescribeTable": "true",
+       "view.sqlConfig.spark.sql.secondaryIndex.ucIntegration.enabled": "true",
+       "view.sqlConfig.spark.sql.session.timeZone": "Etc/UTC",
+       "view.sqlConfig.spark.sql.shuffleDependency.skipMigration.enabled": "true",
+       "view.sqlConfig.spark.sql.skipIndexForTextSearch.enabled": "true",
+       "view.sqlConfig.spark.sql.skipIndexForTextSearch.incremental.maxBytesThreshold": "10000000000000",
+       "view.sqlConfig.spark.sql.skipIndexForTextSearch.ngramIndex.parameterCalculation": "true",
+       "view.sqlConfig.spark.sql.skipIndexForTextSearch.patternBucketCount": "524288",
+       "view.sqlConfig.spark.sql.skipIndexForTextSearch.rowsBatchSize": "32",
+       "view.sqlConfig.spark.sql.skipIndexForTextSearch.v2.enabled": "true",
+       "view.sqlConfig.spark.sql.sources.commitProtocolClass": "com.databricks.sql.transaction.directory.DirectoryAtomicCommitProtocol",
+       "view.sqlConfig.spark.sql.sources.default": "delta",
+       "view.sqlConfig.spark.sql.sqlgateway.retry.readyOnlyCommands.v2.enabled": "true",
+       "view.sqlConfig.spark.sql.sqlgateway.retry.stateChangingCommands.enabled": "true",
+       "view.sqlConfig.spark.sql.sqlgateway.retryFailFastModeEnabled": "true",
+       "view.sqlConfig.spark.sql.standardIndex.costBasedSelection.enabled": "true",
+       "view.sqlConfig.spark.sql.standardIndex.enabled": "false",
+       "view.sqlConfig.spark.sql.streaming.checkpoint.fileChecksum.enabled": "false",
+       "view.sqlConfig.spark.sql.streaming.optimizer.subqueryEarlyUnnesting.enabled": "false",
+       "view.sqlConfig.spark.sql.streaming.stopTimeout": "15s",
+       "view.sqlConfig.spark.sql.thriftServer.interruptOnCancel": "true",
+       "view.sqlConfig.spark.sql.thriftServer.queryTimeout": "0",
+       "view.sqlConfig.spark.sql.thriftserver.scheduler.pool": "thriftserver-session-00000000-0000-0000-0000-000000000008",
+       "view.sqlConfig.spark.sql.timeType.enabled": "true",
+       "view.sqlConfig.spark.sql.timestampNanosTypes.enabled": "false",
+       "view.sqlConfig.spark.sql.validateColumnNamesSync.throwException": "true",
+       "view.sqlConfig.spark.sql.variable.substitute": "false",
+       "view.sqlConfig.spark.sql.variant.pushVariantIntoScan": "true",
+       "view.sqlConfig.spark.sql.variant.pushVariantIntoScan.deferCastError": "true",
+       "view.sqlConfig.spark.sql.variant.writeShredding.enabled": "true",
+       "view.sqlConfig.spark.sql.vectorIndex.enabled": "false",
+       "view.sqlConfig.spark.sql.vectorIndex.numCentroidsScalingFactor": "4",
+       "view.sqlConfig.spark.sql.vectorIndex.optimization.enabled": "false",
+       "view.sqlConfig.spark.sql.vectorIndex.optimization.enabledForCommands": "false",
+       "view.sqlConfig.spark.thriftserver.cloudStoreBasedRowSet.arrowRowLevelByteTrimming": "false"
+      },
+      "row_filters": {},
+      "schema_id": "00000000-0000-0000-0000-000000000006",
+      "schema_name": "roundtrip",
+      "table_id": "00000000-0000-0000-0000-000000000009",
+      "table_type": "VIEW",
+      "updated_at": 1793392939616,
+      "updated_by": "owner@example.com",
+      "view_definition": "SELECT c.customer_id, c.name, count(o.order_id) AS orders\nFROM ucstate_test.roundtrip.customers AS c\nLEFT JOIN ucstate_test.roundtrip.orders AS o ON o.customer_id = c.customer_id\nGROUP BY c.customer_id, c.name",
+      "view_dependencies": {
+       "dependencies": [
+        {
+         "table": {
+          "table_full_name": "ucstate_test.roundtrip.customers"
+         }
+        },
+        {
+         "table": {
+          "table_full_name": "ucstate_test.roundtrip.orders"
+         }
+        }
+       ]
+      }
+     },
+     "tags": {
+      "domain": "sales"
+     }
+    },
+    "customers": {
+     "column_tags": {
+      "email": {
+       "pii": "email"
+      }
+     },
+     "grants": {
+      "account users": [
+       "SELECT"
+      ]
+     },
+     "info": {
+      "catalog_name": "ucstate_test",
+      "columns": [
+       {
+        "column_masks": {},
+        "name": "customer_id",
+        "nullable": false,
+        "position": 0,
+        "type_json": "{\"name\":\"customer_id\",\"type\":\"long\",\"nullable\":false,\"metadata\":{\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000010\",\"delta.identity.allowExplicitInsert\":false,\"delta.identity.start\":1,\"delta.identity.highWaterMark\":2,\"delta.columnMapping.id\":1,\"delta.identity.step\":1}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       },
+       {
+        "column_masks": {
+         "column_masks": [
+          {
+           "function_name": "ucstate_test.roundtrip.mask_email"
+          }
+         ]
+        },
+        "comment": "Contact address",
+        "effective_masks": [
+         {
+          "function_name": "ucstate_test.roundtrip.mask_email"
+         }
+        ],
+        "mask": {
+         "function_name": "ucstate_test.roundtrip.mask_email"
+        },
+        "name": "email",
+        "nullable": true,
+        "position": 1,
+        "type_json": "{\"name\":\"email\",\"type\":\"string\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":2,\"comment\":\"Contact address\",\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000011\"}}",
+        "type_name": "STRING",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "string"
+       },
+       {
+        "column_masks": {},
+        "name": "region",
+        "nullable": true,
+        "position": 2,
+        "type_json": "{\"name\":\"region\",\"type\":\"string\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":3,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000012\",\"CURRENT_DEFAULT\":\"'EU'\"}}",
+        "type_name": "STRING",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "string"
+       },
+       {
+        "column_masks": {},
+        "name": "name",
+        "nullable": true,
+        "position": 3,
+        "type_json": "{\"name\":\"name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":4,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000013\"}}",
+        "type_name": "STRING",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "string"
+       }
+      ],
+      "comment": "One row per customer",
+      "created_at": 1793392915242,
+      "created_by": "owner@example.com",
+      "data_source_format": "DELTA",
+      "effective_row_filters": [
+       {
+        "function_name": "ucstate_test.roundtrip.visible_region",
+        "input_column_names": [
+         "region"
+        ]
+       }
+      ],
+      "full_name": "ucstate_test.roundtrip.customers",
+      "name": "customers",
+      "owner": "owner@example.com",
+      "properties": {
+       "clusterByAuto": "true",
+       "clusteringColumns": "[]",
+       "collation": "UTF8_BINARY",
+       "delta.checkpoint.writeStatsAsJson": "false",
+       "delta.checkpoint.writeStatsAsStruct": "true",
+       "delta.checkpointPolicy": "v2",
+       "delta.columnMapping.maxColumnId": "4",
+       "delta.columnMapping.mode": "name",
+       "delta.enableDeletionVectors": "true",
+       "delta.enableRowTracking": "true",
+       "delta.feature.allowColumnDefaults": "supported",
+       "delta.feature.appendOnly": "supported",
+       "delta.feature.clustering": "supported",
+       "delta.feature.columnMapping": "supported",
+       "delta.feature.deletionVectors": "supported",
+       "delta.feature.domainMetadata": "supported",
+       "delta.feature.identityColumns": "supported",
+       "delta.feature.invariants": "supported",
+       "delta.feature.rowTracking": "supported",
+       "delta.feature.v2Checkpoint": "supported",
+       "delta.lastCommitTimestamp": "1793392920000",
+       "delta.lastUpdateVersion": "2",
+       "delta.minReaderVersion": "3",
+       "delta.minWriterVersion": "7",
+       "delta.parquet.compression.codec": "zstd",
+       "delta.parquet.format.version": "2.12.0",
+       "delta.parquet.format.version.afe.internal": "2.12.0",
+       "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000014",
+       "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000015",
+       "io.unitycatalog.tableId": "00000000-0000-0000-0000-000000000016",
+       "my.example": "yes"
+      },
+      "row_filter": {
+       "function_name": "ucstate_test.roundtrip.visible_region",
+       "input_column_names": [
+        "region"
+       ]
+      },
+      "row_filters": {
+       "row_filters": [
+        {
+         "function_name": "ucstate_test.roundtrip.visible_region",
+         "input_column_names": [
+          "region"
+         ]
+        }
+       ]
+      },
+      "schema_id": "00000000-0000-0000-0000-000000000006",
+      "schema_name": "roundtrip",
+      "table_constraints": [
+       {
+        "constraint_id": "00000000-0000-0000-0000-000000000017",
+        "primary_key_constraint": {
+         "child_columns": [
+          "customer_id"
+         ],
+         "name": "customers_pk"
+        },
+        "table_id": "00000000-0000-0000-0000-000000000016"
+       }
+      ],
+      "table_id": "00000000-0000-0000-0000-000000000016",
+      "table_type": "MANAGED",
+      "updated_at": 1793392924649,
+      "updated_by": "owner@example.com"
+     },
+     "tags": {
+      "domain": "sales",
+      "reviewed": ""
+     }
+    },
+    "order_lines": {
+     "column_tags": {},
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "columns": [
+       {
+        "column_masks": {},
+        "comment": "O'Brien's order, with a \\ backslash",
+        "name": "order",
+        "nullable": false,
+        "position": 0,
+        "type_json": "{\"name\":\"order\",\"type\":\"long\",\"nullable\":false,\"metadata\":{\"delta.columnMapping.id\":1,\"comment\":\"O'Brien's order, with a \\\\ backslash\",\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000018\"}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       },
+       {
+        "column_masks": {},
+        "name": "Line Number",
+        "nullable": true,
+        "position": 1,
+        "type_json": "{\"name\":\"Line Number\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":2,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000019\"}}",
+        "type_name": "INT",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "int"
+       },
+       {
+        "column_masks": {},
+        "name": "event_date",
+        "nullable": true,
+        "partition_index": 0,
+        "position": 2,
+        "type_json": "{\"name\":\"event_date\",\"type\":\"date\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":3,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000020\"}}",
+        "type_name": "DATE",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "date"
+       },
+       {
+        "column_masks": {},
+        "name": "attrs",
+        "nullable": true,
+        "position": 3,
+        "type_json": "{\"name\":\"attrs\",\"type\":{\"type\":\"map\",\"keyType\":\"string\",\"valueType\":\"string\",\"valueContainsNull\":true},\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":4,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000021\"}}",
+        "type_name": "MAP",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "map<string,string>"
+       },
+       {
+        "column_masks": {},
+        "name": "dims",
+        "nullable": true,
+        "position": 4,
+        "type_json": "{\"name\":\"dims\",\"type\":{\"type\":\"struct\",\"fields\":[{\"name\":\"width\",\"type\":\"double\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":6,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000022\"}},{\"name\":\"Height\",\"type\":\"double\",\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":7,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000023\"}}]},\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":5,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000024\"}}",
+        "type_name": "STRUCT",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "struct<width:double,Height:double>"
+       },
+       {
+        "column_masks": {},
+        "name": "labels",
+        "nullable": true,
+        "position": 5,
+        "type_json": "{\"name\":\"labels\",\"type\":{\"type\":\"array\",\"elementType\":\"string\",\"containsNull\":true},\"nullable\":true,\"metadata\":{\"delta.columnMapping.id\":8,\"delta.columnMapping.physicalName\":\"col-00000000-0000-0000-0000-000000000025\"}}",
+        "type_name": "ARRAY",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "array<string>"
+       }
+      ],
+      "comment": "Lines; partitioned by date",
+      "created_at": 1793392937449,
+      "created_by": "owner@example.com",
+      "data_source_format": "DELTA",
+      "full_name": "ucstate_test.roundtrip.order_lines",
+      "name": "order_lines",
+      "owner": "owner@example.com",
+      "properties": {
+       "collation": "UTF8_BINARY",
+       "databricks.internal.autoUpgrades.delta.checkpointPolicy": "v2",
+       "databricks.internal.autoUpgrades.delta.enableRowTracking": "true",
+       "delta.checkpoint.writeStatsAsJson": "false",
+       "delta.checkpoint.writeStatsAsStruct": "true",
+       "delta.checkpointPolicy": "v2",
+       "delta.columnMapping.maxColumnId": "8",
+       "delta.columnMapping.mode": "name",
+       "delta.enableDeletionVectors": "true",
+       "delta.enableRowTracking": "true",
+       "delta.feature.appendOnly": "supported",
+       "delta.feature.columnMapping": "supported",
+       "delta.feature.deletionVectors": "supported",
+       "delta.feature.domainMetadata": "supported",
+       "delta.feature.invariants": "supported",
+       "delta.feature.rowTracking": "supported",
+       "delta.feature.v2Checkpoint": "supported",
+       "delta.lastCommitTimestamp": "1793392938000",
+       "delta.lastUpdateVersion": "0",
+       "delta.minReaderVersion": "3",
+       "delta.minWriterVersion": "7",
+       "delta.parquet.compression.codec": "zstd",
+       "delta.parquet.format.version": "2.12.0",
+       "delta.parquet.format.version.afe.internal": "2.12.0",
+       "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000026",
+       "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000027",
+       "io.unitycatalog.tableId": "00000000-0000-0000-0000-000000000028"
+      },
+      "row_filters": {},
+      "schema_id": "00000000-0000-0000-0000-000000000006",
+      "schema_name": "roundtrip",
+      "table_id": "00000000-0000-0000-0000-000000000028",
+      "table_type": "MANAGED",
+      "updated_at": 1793392937449,
+      "updated_by": "owner@example.com"
+     },
+     "tags": {}
+    },
+    "orders": {
+     "column_tags": {},
+     "grants": {},
+     "info": {
+      "catalog_name": "ucstate_test",
+      "columns": [
+       {
+        "column_masks": {},
+        "name": "order_id",
+        "nullable": false,
+        "position": 0,
+        "type_json": "{\"name\":\"order_id\",\"type\":\"long\",\"nullable\":false,\"metadata\":{}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       },
+       {
+        "column_masks": {},
+        "name": "order_date",
+        "nullable": true,
+        "position": 1,
+        "type_json": "{\"name\":\"order_date\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}}",
+        "type_name": "DATE",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "date"
+       },
+       {
+        "column_masks": {},
+        "name": "customer_id",
+        "nullable": true,
+        "position": 2,
+        "type_json": "{\"name\":\"customer_id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       },
+       {
+        "column_masks": {},
+        "name": "amount",
+        "nullable": false,
+        "position": 3,
+        "type_json": "{\"name\":\"amount\",\"type\":\"decimal(10,2)\",\"nullable\":false,\"metadata\":{}}",
+        "type_name": "DECIMAL",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "decimal(10,2)"
+       },
+       {
+        "column_masks": {},
+        "name": "amount_doubled",
+        "nullable": true,
+        "position": 4,
+        "type_json": "{\"name\":\"amount_doubled\",\"type\":\"decimal(12,2)\",\"nullable\":true,\"metadata\":{\"delta.generationExpression\":\"amount * 2\"}}",
+        "type_name": "DECIMAL",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "decimal(12,2)"
+       },
+       {
+        "column_masks": {},
+        "name": "quantity",
+        "nullable": true,
+        "position": 5,
+        "type_json": "{\"name\":\"quantity\",\"type\":\"long\",\"nullable\":true,\"metadata\":{\"delta.typeChanges\":[{\"toType\":\"long\",\"fromType\":\"integer\"}]}}",
+        "type_name": "LONG",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "bigint"
+       },
+       {
+        "column_masks": {},
+        "comment": "Order status",
+        "name": "status",
+        "nullable": true,
+        "position": 6,
+        "type_json": "{\"name\":\"status\",\"type\":\"string\",\"nullable\":true,\"metadata\":{\"comment\":\"Order status\",\"CURRENT_DEFAULT\":\"'new'\"}}",
+        "type_name": "STRING",
+        "type_precision": 0,
+        "type_scale": 0,
+        "type_text": "string"
+       }
+      ],
+      "comment": "One row per order",
+      "created_at": 1793392924590,
+      "created_by": "owner@example.com",
+      "data_source_format": "DELTA",
+      "full_name": "ucstate_test.roundtrip.orders",
+      "name": "orders",
+      "owner": "owner@example.com",
+      "properties": {
+       "clusteringColumns": "[[\"order_date\"],[\"customer_id\"]]",
+       "collation": "UTF8_BINARY",
+       "delta.checkpoint.writeStatsAsJson": "false",
+       "delta.checkpoint.writeStatsAsStruct": "true",
+       "delta.checkpointPolicy": "v2",
+       "delta.constraints.amount_positive": "amount > 0",
+       "delta.enableDeletionVectors": "true",
+       "delta.enableRowTracking": "true",
+       "delta.enableTypeWidening": "true",
+       "delta.feature.allowColumnDefaults": "supported",
+       "delta.feature.appendOnly": "supported",
+       "delta.feature.checkConstraints": "supported",
+       "delta.feature.clustering": "supported",
+       "delta.feature.deletionVectors": "supported",
+       "delta.feature.domainMetadata": "supported",
+       "delta.feature.generatedColumns": "supported",
+       "delta.feature.invariants": "supported",
+       "delta.feature.rowTracking": "supported",
+       "delta.feature.typeWidening": "supported",
+       "delta.feature.v2Checkpoint": "supported",
+       "delta.lastCommitTimestamp": "1793392936000",
+       "delta.lastUpdateVersion": "8",
+       "delta.minReaderVersion": "3",
+       "delta.minWriterVersion": "7",
+       "delta.parquet.compression.codec": "zstd",
+       "delta.parquet.format.version": "2.12.0",
+       "delta.parquet.format.version.afe.internal": "2.12.0",
+       "delta.rowTracking.materializedRowCommitVersionColumnName": "_row-commit-version-col-00000000-0000-0000-0000-000000000029",
+       "delta.rowTracking.materializedRowIdColumnName": "_row-id-col-00000000-0000-0000-0000-000000000030",
+       "io.unitycatalog.tableId": "00000000-0000-0000-0000-000000000031",
+       "spark.sql.statistics.auxiliaryInfo": "{\"source\":\"AUTO_STATS\"}",
+       "spark.sql.statistics.colStats.amount.avgLen": "8",
+       "spark.sql.statistics.colStats.amount.createdAt": "1793392926884",
+       "spark.sql.statistics.colStats.amount.createdBy": "root",
+       "spark.sql.statistics.colStats.amount.distinctCount": "2",
+       "spark.sql.statistics.colStats.amount.max": "7.50",
+       "spark.sql.statistics.colStats.amount.maxLen": "8",
+       "spark.sql.statistics.colStats.amount.min": "5.00",
+       "spark.sql.statistics.colStats.amount.nullCount": "0",
+       "spark.sql.statistics.colStats.amount.rowCount": "4",
+       "spark.sql.statistics.colStats.amount.version": "2",
+       "spark.sql.statistics.colStats.amount_doubled.avgLen": "8",
+       "spark.sql.statistics.colStats.amount_doubled.createdAt": "1793392926884",
+       "spark.sql.statistics.colStats.amount_doubled.createdBy": "root",
+       "spark.sql.statistics.colStats.amount_doubled.distinctCount": "2",
+       "spark.sql.statistics.colStats.amount_doubled.max": "15.00",
+       "spark.sql.statistics.colStats.amount_doubled.maxLen": "8",
+       "spark.sql.statistics.colStats.amount_doubled.min": "10.00",
+       "spark.sql.statistics.colStats.amount_doubled.nullCount": "0",
+       "spark.sql.statistics.colStats.amount_doubled.rowCount": "4",
+       "spark.sql.statistics.colStats.amount_doubled.version": "2",
+       "spark.sql.statistics.colStats.customer_id.avgLen": "8",
+       "spark.sql.statistics.colStats.customer_id.createdAt": "1793392926884",
+       "spark.sql.statistics.colStats.customer_id.createdBy": "root",
+       "spark.sql.statistics.colStats.customer_id.distinctCount": "2",
+       "spark.sql.statistics.colStats.customer_id.max": "2",
+       "spark.sql.statistics.colStats.customer_id.maxLen": "8",
+       "spark.sql.statistics.colStats.customer_id.min": "1",
+       "spark.sql.statistics.colStats.customer_id.nullCount": "0",
+       "spark.sql.statistics.colStats.customer_id.rowCount": "4",
+       "spark.sql.statistics.colStats.customer_id.version": "2",
+       "spark.sql.statistics.colStats.order_date.avgLen": "4",
+       "spark.sql.statistics.colStats.order_date.createdAt": "1793392926884",
+       "spark.sql.statistics.colStats.order_date.createdBy": "root",
+       "spark.sql.statistics.colStats.order_date.distinctCount": "2",
+       "spark.sql.statistics.colStats.order_date.max": "2026-10-02",
+       "spark.sql.statistics.colStats.order_date.maxLen": "4",
+       "spark.sql.statistics.colStats.order_date.min": "2026-10-01",
+       "spark.sql.statistics.colStats.order_date.nullCount": "0",
+       "spark.sql.statistics.colStats.order_date.rowCount": "4",
+       "spark.sql.statistics.colStats.order_date.version": "2",
+       "spark.sql.statistics.colStats.order_id.avgLen": "8",
+       "spark.sql.statistics.colStats.order_id.createdAt": "1793392926884",
+       "spark.sql.statistics.colStats.order_id.createdBy": "root",
+       "spark.sql.statistics.colStats.order_id.distinctCount": "2",
+       "spark.sql.statistics.colStats.order_id.max": "11",
+       "spark.sql.statistics.colStats.order_id.maxLen": "8",
+       "spark.sql.statistics.colStats.order_id.min": "10",
+       "spark.sql.statistics.colStats.order_id.nullCount": "0",
+       "spark.sql.statistics.colStats.order_id.rowCount": "4",
+       "spark.sql.statistics.colStats.order_id.version": "2",
+       "spark.sql.statistics.colStats.quantity.avgLen": "4",
+       "spark.sql.statistics.colStats.quantity.createdAt": "1793392926884",
+       "spark.sql.statistics.colStats.quantity.createdBy": "root",
+       "spark.sql.statistics.colStats.quantity.distinctCount": "2",
+       "spark.sql.statistics.colStats.quantity.max": "3",
+       "spark.sql.statistics.colStats.quantity.maxLen": "4",
+       "spark.sql.statistics.colStats.quantity.min": "1",
+       "spark.sql.statistics.colStats.quantity.nullCount": "0",
+       "spark.sql.statistics.colStats.quantity.rowCount": "4",
+       "spark.sql.statistics.colStats.quantity.version": "2",
+       "spark.sql.statistics.createdAt": "1793392926884",
+       "spark.sql.statistics.createdBy": "root",
+       "spark.sql.statistics.numRows": "4",
+       "spark.sql.statistics.totalSize": "4191",
+       "spark.sql.statistics.version": "2"
+      },
+      "row_filters": {},
+      "schema_id": "00000000-0000-0000-0000-000000000006",
+      "schema_name": "roundtrip",
+      "table_constraints": [
+       {
+        "constraint_id": "00000000-0000-0000-0000-000000000032",
+        "primary_key_constraint": {
+         "child_columns": [
+          "order_id"
+         ],
+         "name": "orders_pk"
+        },
+        "table_id": "00000000-0000-0000-0000-000000000031"
+       },
+       {
+        "constraint_id": "00000000-0000-0000-0000-000000000033",
+        "foreign_key_constraint": {
+         "child_columns": [
+          "customer_id"
+         ],
+         "name": "orders_customers_fk",
+         "parent_columns": [
+          "customer_id"
+         ],
+         "parent_table": "ucstate_test.roundtrip.customers"
+        },
+        "table_id": "00000000-0000-0000-0000-000000000031"
+       }
+      ],
+      "table_id": "00000000-0000-0000-0000-000000000031",
+      "table_type": "MANAGED",
+      "updated_at": 1793392935714,
+      "updated_by": "owner@example.com"
+     },
+     "tags": {}
+    }
+   },
+   "tags": {
+    "purpose": "test"
+   },
+   "volumes": {
+    "landing": {
+     "grants": {
+      "account users": [
+       "READ_VOLUME"
+      ]
+     },
+     "info": {
+      "catalog_name": "ucstate_test",
+      "comment": "Raw files",
+      "created_at": 1793392941126,
+      "created_by": "owner@example.com",
+      "full_name": "ucstate_test.roundtrip.landing",
+      "name": "landing",
+      "owner": "owner@example.com",
+      "resource_name": "/metastores/00000000-0000-0000-0000-000000000034/volumes/00000000-0000-0000-0000-000000000035",
+      "schema_id": "00000000-0000-0000-0000-000000000006",
+      "schema_name": "roundtrip",
+      "updated_at": 1793392941662,
+      "updated_by": "owner@example.com",
+      "volume_id": "00000000-0000-0000-0000-000000000035",
+      "volume_type": "MANAGED"
+     },
+     "tags": {
+      "zone": "raw"
+     }
+    }
+   }
+  }
+ }
+}

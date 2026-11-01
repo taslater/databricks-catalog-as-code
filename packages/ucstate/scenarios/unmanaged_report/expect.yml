@@ -1,0 +1,5 @@
+description: Under policy report, a table missing from the source is reported and kept.
+covers: []
+classes: []
+rows:
+  - {query: "SELECT count(*) FROM sc_unmanaged_report.stray", result: 2}

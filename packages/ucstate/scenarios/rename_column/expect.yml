@@ -1,0 +1,8 @@
+description: refactor.yml renames a column, turning on the column mapping the source declares.
+covers: [rename_drop_column]
+classes: [one-way]
+contains:
+  - ALTER TABLE sc_rename_column.t SET TBLPROPERTIES ('delta.columnMapping.mode' = 'name')
+  - ALTER TABLE sc_rename_column.t RENAME COLUMN name TO full_name
+rows:
+  - {query: "SELECT full_name FROM sc_rename_column.t WHERE id = 1", result: Ada}

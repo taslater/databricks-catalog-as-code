@@ -1,0 +1,8 @@
+description: A table's first default comes with the allowColumnDefaults feature the source declares.
+covers: [first_default]
+classes: [one-way, auto]
+contains:
+  - ALTER TABLE sc_first_default.t SET TBLPROPERTIES ('delta.feature.allowColumnDefaults' = 'supported')
+  - ALTER TABLE sc_first_default.t ALTER COLUMN status SET DEFAULT 'new'
+rows:
+  - {query: "SELECT count(*) FROM sc_first_default.t WHERE status IS NULL", result: 1}

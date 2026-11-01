@@ -1,0 +1,1 @@
+CREATE FUNCTION sc_governance.mask_a(v STRING) RETURNS STRING RETURN '***';

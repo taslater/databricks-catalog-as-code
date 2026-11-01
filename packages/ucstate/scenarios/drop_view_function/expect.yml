@@ -1,0 +1,7 @@
+description: Under policy drop, a view and a function removed from the source are dropped.
+covers: []
+policy: {unmanaged_objects: drop}
+classes: [auto]
+contains:
+  - DROP VIEW sc_drop_view_function.v
+  - DROP FUNCTION sc_drop_view_function.f

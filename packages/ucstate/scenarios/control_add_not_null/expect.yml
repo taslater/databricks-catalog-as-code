@@ -1,0 +1,8 @@
+description: "Control: NOT NULL on a column with a NULL row fails its precheck, so it is blocked."
+covers: [add_not_null]
+classes: [checked]
+blocked: true
+says:
+  - "its precheck found 1 row in the way"
+rows:
+  - {query: "SELECT count(*) FROM sc_control_add_not_null.t WHERE x IS NULL", result: 1}

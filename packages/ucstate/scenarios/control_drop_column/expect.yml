@@ -1,0 +1,8 @@
+description: "Control: dropping a column loses data, so without an allowance it is blocked."
+covers: [rename_drop_column]
+classes: [one-way, destructive]
+blocked: true
+says:
+  - "needs an allowance in project.yml: allow: [drop_column: sc_control_drop_column.t.legacy]"
+rows:
+  - {query: "SELECT count(legacy) FROM sc_control_drop_column.t", result: 1}

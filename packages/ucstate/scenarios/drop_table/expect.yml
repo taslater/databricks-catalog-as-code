@@ -1,0 +1,11 @@
+description: An allowance drops a table the source no longer has, and the plan says how to undrop it.
+covers: [drop_table]
+allow:
+  - drop_table: sc_drop_table.doomed
+classes: [destructive]
+contains:
+  - DROP TABLE sc_drop_table.doomed
+says:
+  - UNDROP TABLE WITH ID
+rows:
+  - {query: "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'sc_drop_table' AND table_name = 'doomed'", result: 0}
