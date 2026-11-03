@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import demo
 from ucatlas import cli
 from ucmodel.workspace import Workspace
 
@@ -96,3 +97,68 @@ def test_a_catalog_and_a_snapshot_together_are_refused(capsys, tmp_path):
     with pytest.raises(SystemExit):
         cli.main(["draw", "--catalog", "c", "--snapshot", str(tmp_path / "s.json")])
     assert "not allowed with argument" in capsys.readouterr().err
+
+
+# explore ------------------------------------------------------------------------------------
+
+
+def demo_snapshot(tmp_path, with_lineage=True):
+    from ucmodel.snapshot import make, write
+
+    s = demo.take()
+    return write(make(s.catalog, s.schemas, s.taken_at, s.model,
+                      s.lineage if with_lineage else None), tmp_path)
+
+
+JOBS = str(demo.HERE / "jobs")
+
+
+def test_explore_writes_the_page_and_says_what_it_couldnt_read(no_config, capsys, tmp_path):
+    if shutil.which("dot") is None:
+        pytest.skip("needs Graphviz")
+    out = tmp_path / "explorer"
+    args = ["explore", "--snapshot", str(demo_snapshot(tmp_path)), "--sql", JOBS,
+            "-o", str(out), "--tries", "2"]
+    assert cli.main(args) == 0
+    said = capsys.readouterr().out
+    assert said.startswith(f"wrote {out / 'index.html'}: 22 tables, 4 views, ")
+    assert "; 1 statement with lineage gaps." in said
+    assert f"--directory {out} 8000" in said
+    assert "has no lineage" not in said
+    assert '"catalog":"atlas_demo"' in (out / "index.html").read_text()
+
+
+def test_explore_without_lineage_says_edges_come_from_sql_only(no_config, capsys, tmp_path,
+                                                              monkeypatch):
+    from ucatlas import layout
+
+    monkeypatch.setattr(layout, "build", lambda nodes, edges, tries=None: {})
+    path = demo_snapshot(tmp_path, with_lineage=False)
+    assert cli.main(["explore", "--snapshot", str(path), "-o", str(tmp_path / "x")]) == 0
+    said = capsys.readouterr().out
+    assert "The snapshot has no lineage, so edges come from SQL only" in said
+    assert "lineage gaps" not in said  # no --sql: only the views' definitions are read
+
+
+def test_explore_names_a_sql_path_that_isnt_there(no_config, capsys, tmp_path):
+    path = demo_snapshot(tmp_path)
+    args = ["explore", "--snapshot", str(path), "--sql", str(tmp_path / "nope"),
+            "-o", str(tmp_path / "x")]
+    assert cli.main(args) == 2
+    assert capsys.readouterr().err == f"ucatlas: no such file or folder: {tmp_path / 'nope'}\n"
+    assert not (tmp_path / "x").exists()
+
+
+def test_explore_refuses_an_edited_snapshot(no_config, capsys, tmp_path):
+    path = demo_snapshot(tmp_path)
+    path.write_text(path.read_text().replace('"core"', '"kore"', 1))
+    assert cli.main(["explore", "--snapshot", str(path), "-o", str(tmp_path / "x")]) == 2
+    assert "changed after it was taken" in capsys.readouterr().err
+    assert not (tmp_path / "x").exists()
+
+
+def test_explore_without_graphviz_is_a_short_error(no_config, capsys, tmp_path, monkeypatch):
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    path = demo_snapshot(tmp_path)
+    assert cli.main(["explore", "--snapshot", str(path), "-o", str(tmp_path / "x")]) == 2
+    assert capsys.readouterr().err.startswith("ucatlas: Graphviz isn't installed")

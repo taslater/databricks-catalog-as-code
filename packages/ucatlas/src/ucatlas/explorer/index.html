@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>ucatlas explorer</title>
+<link rel="icon" href="data:,">
+<!-- d3 and elkjs: the copies beside this page when the site has them, else jsDelivr -->
+<script src="d3.min.js"></script>
+<script>window.d3 || document.write('<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"><\/script>')</script>
+<script src="elk.bundled.js"></script>
+<script>window.ELK || document.write('<script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"><\/script>')</script>
+<style>
+  :root { --ink:#1f2328; --muted:#656d76; --line:#d0d7de; --soft:#eaeef2; --bg:#f6f8fa; --accent:#0969da;
+          --up:#0969da; --down:#8250df; --warn:#9a6700; --bad:#cf222e; --ok:#1a7f37; --runtime:#fb8500; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; align-items:center; gap:14px; padding:8px 14px; border-bottom:1px solid var(--line); background:#fff; }
+  header h1 { font-size:15px; margin:0; font-weight:600; white-space:nowrap; }
+  .badge { font-size:11px; padding:1px 7px; border-radius:10px; background:#f6f8fa; border:1px solid var(--line); color:var(--muted); white-space:nowrap; cursor:help; }
+  button.badge.warn { background:#fff8c5; border-color:#d4a72c; color:#7d4e00; cursor:pointer; }
+  .gap { border-left:3px solid #bf8700; padding:4px 10px; margin:8px 0; background:#fffbea; }
+  nav { display:inline-flex; border:1px solid var(--ink); border-radius:6px; overflow:hidden; }
+  nav button { border:0; border-left:1px solid var(--ink); background:#fff; padding:5px 14px; cursor:pointer; font-size:13px; }
+  nav button:first-child { border-left:0; } nav button.on { background:var(--ink); color:#fff; }
+  #searchbox { position:relative; flex:1; max-width:460px; }
+  #search { width:100%; padding:6px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px; }
+  #results { position:absolute; top:34px; left:0; right:0; background:#fff; border:1px solid var(--line); border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,.12); max-height:420px; overflow:auto; z-index:20; display:none; }
+  #results div.r { padding:6px 10px; cursor:pointer; border-bottom:1px solid #f0f0f0; }
+  #results div.r:hover, #results div.r.sel { background:#f0f6ff; }
+  .r .k { font-size:10px; text-transform:uppercase; color:var(--muted); margin-right:6px; } .r .why { color:var(--muted); font-size:12px; }
+  main { flex:1; display:flex; min-height:0; }
+  /* the view sidebar: a section heading, then fields; each field is a small label above its control */
+  #view { width:252px; flex:none; border-right:1px solid var(--line); background:#fff; overflow:auto; padding:4px 14px 20px; font-size:12.5px; }
+  #view section { padding:12px 0 6px; border-bottom:1px solid var(--soft); }
+  #view section:last-child { border-bottom:0; }
+  #view h4 { margin:0 0 8px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); }
+  .field { margin:0 0 12px; }
+  .field > .lbl { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .seg { display:inline-flex; border:1px solid #afb8c1; border-radius:6px; overflow:hidden; background:#fff; }
+  .seg button { border:0; border-left:1px solid #d0d7de; background:#fff; padding:3px 9px; font-size:12px; cursor:pointer; color:var(--ink); }
+  .seg button:first-child { border-left:0; } .seg button:hover { background:#f3f4f6; }
+  .seg button.on { background:var(--accent); color:#fff; }
+  .seg.off, .dim { opacity:.45; pointer-events:none; }
+  .check { display:flex; align-items:center; gap:7px; margin:4px 0; cursor:pointer; user-select:none; }
+  .check input { margin:0; }
+  .swatch { display:inline-block; width:11px; height:11px; border-radius:3px; flex:none; }
+  .linekey { flex:none; }
+  select, input.txt { font-size:12.5px; padding:4px 6px; border:1px solid var(--line); border-radius:6px; background:#fff; width:100%; }
+  .key { display:flex; flex-wrap:wrap; gap:3px 10px; margin-top:6px; font-size:11.5px; color:var(--muted); }
+  .key span { display:inline-flex; align-items:center; gap:4px; }
+  .focusname { font-weight:600; font-size:13px; word-break:break-all; margin-bottom:6px; }
+  .tinylinks a { font-size:11.5px; margin-left:6px; }
+  a { color:var(--accent); }
+  .btn { border:1px solid var(--line); background:#fff; padding:3px 9px; border-radius:6px; cursor:pointer; font-size:12px; color:var(--ink); }
+  .btn:hover { background:#f3f4f6; } .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn:disabled { opacity:.45; cursor:default; }
+  .trail { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .trail a { font-size:11.5px; background:var(--bg); border:1px solid var(--soft); border-radius:10px; padding:0 7px; text-decoration:none; color:var(--ink); }
+  #stage { flex:1; position:relative; background:var(--bg); min-width:0; }
+  #stage svg { width:100%; height:100%; display:block; }
+  #hint { position:absolute; left:12px; bottom:10px; font-size:11.5px; color:var(--muted); background:rgba(255,255,255,.85); padding:3px 8px; border-radius:6px; }
+  aside#panel { width:390px; flex:none; border-left:1px solid var(--line); background:#fff; overflow:auto; padding:14px 16px; }
+  aside h2 { font-size:16px; margin:0 0 2px; word-break:break-all; }
+  aside h3 { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:18px 0 6px; }
+  .sub { color:var(--muted); }
+  .chip { display:inline-block; font-size:11px; padding:0 6px; border-radius:9px; border:1px solid var(--line); margin:0 4px 2px 0; background:#fff; }
+  .chip.cert { background:#dafbe1; border-color:#4ac26b; } .chip.pii { background:#ffebe9; border-color:#ff8182; }
+  .status { font-weight:600; } .status.day, .status.week { color:var(--ok); } .status.month { color:var(--warn); } .status.older { color:var(--bad); }
+  .status.unseen, .status.view, .status.outside { color:var(--muted); font-weight:normal; }
+  table.cols { width:100%; border-collapse:collapse; font-size:12px; }
+  table.cols td { padding:3px 4px; border-bottom:1px solid #f0f0f0; vertical-align:top; }
+  table.cols tr.click { cursor:pointer; } table.cols tr.click:hover { background:#f0f6ff; }
+  code, pre { font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  pre { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px; white-space:pre-wrap; word-break:break-word; margin:4px 0; }
+  .hop { border-left:2px solid var(--up); padding:2px 0 2px 10px; margin:4px 0; } .hop.down { border-color:var(--down); }
+  .hop .expr { font-family:ui-monospace, Menlo, monospace; font-size:12px; background:#eef4ff; padding:1px 4px; border-radius:3px; }
+  .finding { border-left:3px solid var(--accent); padding:4px 10px; margin:6px 0; background:#f6f8fa; }
+  .finding.warn { border-color:#bf8700; } .finding.bad { border-color:var(--bad); }
+  #tip { position:fixed; pointer-events:none; background:#1f2328; color:#fff; padding:6px 8px; border-radius:6px; font-size:12px; max-width:420px; z-index:50; display:none; }
+  #tip code { color:#ffd8b5; }
+  .page { flex:1; overflow:auto; padding:16px 20px; background:var(--bg); }
+  .page h2 { font-size:18px; margin:4px 0 10px; } .page h3 { font-size:14px; margin:22px 0 8px; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; min-width:250px; flex:1; border-top:4px solid #999; }
+  .card .t { font-weight:600; font-size:14px; } .card dl { display:grid; grid-template-columns:90px 1fr; gap:2px 8px; margin:8px 0 0; font-size:12px; }
+  .card dt { color:var(--muted); } .card dd { margin:0; }
+  table.grid { border-collapse:collapse; background:#fff; border:1px solid var(--line); font-size:12px; width:100%; }
+  table.grid th, table.grid td { border:1px solid var(--line); padding:5px 7px; text-align:left; vertical-align:top; }
+  table.grid th { background:#f6f8fa; }
+  table.grid tr.differs td.concept { box-shadow: inset 3px 0 0 #bf8700; }
+  table.grid td.empty { background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f2f2f2 6px,#f2f2f2 12px); }
+  .cell-name { font-weight:600; } .cell-type { color:var(--muted); margin-left:4px; }
+  .cell-expr { font-family:ui-monospace, Menlo, monospace; font-size:11px; color:#953800; display:block; margin-top:2px; }
+  .cell-via { font-size:11px; color:var(--muted); }
+  .bar { display:flex; height:22px; border-radius:4px; overflow:hidden; border:1px solid var(--line); margin:6px 0; }
+  .bar div { display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; white-space:nowrap; overflow:hidden; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  #ancestry { height:520px; background:#fff; border:1px solid var(--line); border-radius:8px; }
+  #ancestry svg { width:100%; height:100%; }
+  .hidden { display:none !important; }
+  /* svg */
+  .node rect.box { fill:#fff; stroke:#c4cbd3; }
+  .node.sel rect.box { stroke:var(--ink); stroke-width:2.5; }
+  .node.focus rect.box { stroke:var(--accent); stroke-width:2.5; }
+  .node.faded { opacity:.3; } .node { transition:opacity .15s; }
+  .node text { font-size:12px; dominant-baseline:middle; }
+  .node .hdr { cursor:pointer; }
+  .node .row { cursor:pointer; } .node .row:hover rect { fill:#f0f6ff; }
+  .node .row.up rect { fill:#ddf4ff; } .node .row.down rect { fill:#fbefff; } .node .row.picked rect { fill:#ffd8b5; }
+  .handle { cursor:pointer; } .handle circle { fill:#fff; stroke:#8c959f; } .handle:hover circle { fill:var(--accent); stroke:var(--accent); }
+  .handle text { font-size:10px; text-anchor:middle; dominant-baseline:central; fill:#57606a; } .handle:hover text { fill:#fff; }
+  .edge { fill:none; stroke:#8c959f; stroke-width:1.4; transition:opacity .15s; }
+  .edge.join { stroke-dasharray:2 3; stroke:#afb8c1; }
+  .edge.fk { stroke:#6e7781; stroke-dasharray:1 4; stroke-linecap:round; stroke-width:1.8; }
+  .edge.runtime { stroke:var(--runtime); stroke-width:2; }
+  .edge.unseen { stroke:var(--accent); stroke-dasharray:6 4; }
+  .edge.quiet:not(.hl-up):not(.hl-down) { display:none; } /* an opened schema shows only its own edges, and what a selection lights */
+  .edge.hl-up { stroke:var(--up); stroke-width:2.6; opacity:1; } .edge.hl-down { stroke:var(--down); stroke-width:2.6; opacity:1; }
+  .edge.faded { opacity:.12; }
+  .edge.route { stroke:var(--runtime); stroke-width:4; }
+  .edge-hit { fill:none; stroke:transparent; stroke-width:12; cursor:help; }
+  .trace { fill:none; stroke-width:2; opacity:.9; } .trace.up { stroke:var(--up); } .trace.down { stroke:var(--down); }
+  .region rect { stroke:none; } .region text { font-size:12px; font-weight:600; fill:#57606a; text-transform:uppercase; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ucatlas explorer</h1>
+  <span class="badge" id="snap"></span><button class="badge warn hidden" id="gaps"></button>
+  <nav id="modes"><button data-mode="explore" class="on">Explore</button><button data-mode="compare">Compare</button><button data-mode="map">Map</button></nav>
+  <div id="searchbox"><input id="search" placeholder="Search tables, columns, comments, tags…  ( / )" autocomplete="off"><div id="results"></div></div>
+</header>
+<main>
+  <div id="view"></div>
+  <div id="stage">
+    <svg id="svg"><defs>
+      <marker id="m-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8c959f"/></marker>
+      <marker id="m-up" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#0969da"/></marker>
+      <marker id="m-down" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8250df"/></marker>
+      <marker id="m-runtime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#fb8500"/></marker>
+      <marker id="m-edge-w" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8c959f"/></marker>
+      <marker id="m-up-w" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#0969da"/></marker>
+      <marker id="m-down-w" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8250df"/></marker>
+      <marker id="m-runtime-w" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#fb8500"/></marker>
+    </defs><g id="zoom"></g></svg>
+    <div id="hint"></div>
+  </div>
+  <aside id="panel"></aside>
+  <div id="page" class="page hidden"></div>
+</main>
+<div id="tip"></div>
+<script>const GRAPH = /*GRAPH*/null;</script>
+<script>
+"use strict";
+const G = GRAPH;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n == null ? "—" : Number(n).toLocaleString("en-US");
+const when = s => s ? s.replace("T", " ").replace(/:\d\dZ$/, " UTC") : "—";
+const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+$("#snap").textContent = `${G.meta.catalog} · ${when(G.meta.taken_at)}`;
+$("#snap").title = [`A snapshot of ${G.meta.catalog}${G.meta.snapshot ? " (" + G.meta.snapshot + ")" : ""}, taken ${when(G.meta.taken_at)}.`,
+  G.meta.lineage ? "Lineage the platform recorded is included." : "The snapshot has no lineage the platform recorded: edges come from SQL only.",
+  `${G.meta.statements} statements read with sqlglot ${G.meta.sqlglot}, from view definitions${G.meta.sql_files ? ` and ${G.meta.sql_files} SQL files` : ""}.`].join("\n");
+if (G.gaps.length) { $("#gaps").textContent = `⚠ ${G.gaps.length} lineage gap${G.gaps.length === 1 ? "" : "s"}`; $("#gaps").classList.remove("hidden"); }
+
+// ---------------------------------------------------------------- the graph's indexes
+const byId = new Map(G.nodes.map(n => [n.id, n]));
+const tableOf = cid => cid.slice(0, cid.lastIndexOf("."));
+const colName = cid => cid.slice(cid.lastIndexOf(".") + 1);
+const up = new Map(), down = new Map(), colUp = new Map(), colDown = new Map();
+G.table_edges.forEach(e => { push(up, e.t, e); push(down, e.s, e); });
+G.column_edges.forEach(e => { push(colUp, e.t, e); push(colDown, e.s, e); });
+const schemaNames = G.schemas.map(s => s.name);
+const PALETTE = ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f","#edc948","#b07aa1","#ff9da7","#9c755f","#bab0ac"];
+const schemaColor = s => PALETTE[schemaNames.indexOf(s) % PALETTE.length] || "#999";
+// when a table was last written, by the lineage the platform recorded, as of the snapshot
+const TAKEN = Date.parse(G.meta.taken_at);
+const AGE = { day:"#dafbe1", week:"#eef7d8", month:"#fff1c2", older:"#ffd7d5", unseen:"#eaeef2", view:"#ffffff", outside:"#f6f8fa" };
+const AGE_TEXT = { day:"written in the day before", week:"in the week before", month:"in the 30 days before", older:"over 30 days before",
+  unseen:"no write in the lineage", view:"a view", outside:"outside the snapshot" };
+function age(n) {
+  if (n.kind === "view") return "view";
+  if (n.kind !== "table") return "outside";
+  if (!n.written) return "unseen";
+  const days = (TAKEN - Date.parse(n.written)) / 864e5;
+  return days <= 1 ? "day" : days <= 7 ? "week" : days <= 30 ? "month" : "older";
+}
+const label = id => { const n = byId.get(id); return n ? (n.kind === "files" ? n.name : n.id) : id; };
+const short = id => id.startsWith("files:") ? id.slice(6).replace(/^\/Volumes\//, "…/") : id;
+
+// every relationship between two tables, by kind; a foreign key runs from the parent to the child
+const kindOf = e => !e.static ? "runtime" : e.role === "join" ? "join" : "flow";
+const EDGES = G.table_edges.map(e => ({ ...e, kind:kindOf(e) }));
+G.nodes.forEach(n => n.fks.forEach(f => EDGES.push({ s:f.references, t:n.id, kind:"fk", fk:f, static:true, observed:null, via:f.name })));
+EDGES.forEach((e, i) => e.id = "e" + i);
+
+// declared keys hold the same values on both sides
+const uf = new Map();
+const find = x => { while (uf.has(x) && uf.get(x) !== x) x = uf.get(x); return x; };
+G.fk_edges.forEach(e => { const a = find(e.s), b = find(e.t); if (a !== b) uf.set(a, b); });
+
+function closure(start, adj, key, hops = Infinity) {
+  const seen = new Map([[start, 0]]); let frontier = [start];
+  for (let d = 1; d <= hops && frontier.length; d++) {
+    const next = [];
+    for (const x of frontier) for (const e of adj.get(x) || []) { const y = e[key]; if (!seen.has(y)) { seen.set(y, d); next.push(y); } }
+    frontier = next;
+  }
+  return seen;
+}
+const dependentsCache = new Map(); // how many objects are downstream: a measure of how much rests on one
+const dependents = id => { if (!dependentsCache.has(id)) dependentsCache.set(id, closure(id, down, "t").size - 1); return dependentsCache.get(id); };
+const rootCache = new Map();
+function roots(cid) { // the furthest-upstream catalog columns a column's values come from
+  if (rootCache.has(cid)) return rootCache.get(cid);
+  const out = new Set(), stack = [cid], seen = new Set();
+  while (stack.length) {
+    const c = stack.pop(); if (seen.has(c)) continue; seen.add(c);
+    const ins = (colUp.get(c) || []).filter(e => !tableOf(e.s).startsWith("files:"));
+    if (!ins.length) out.add(find(c)); else ins.forEach(e => stack.push(e.s));
+  }
+  rootCache.set(cid, out); return out;
+}
+function filtersUpstream(tid) { // the conditions that decide which rows reach a table, nearest first
+  const out = [], dist = closure(tid, up, "s");
+  [...dist.entries()].sort((a, b) => a[1] - b[1]).forEach(([t, d]) =>
+    (byId.get(t)?.writers || []).forEach(w => w.filters.forEach(f => out.push({ table:t, via:w.via, filter:f, own:d === 0 }))));
+  return out;
+}
+function derivation(cid) {
+  const hops = [], seen = new Set(), queue = [[cid, 0]];
+  while (queue.length) { const [c, depth] = queue.shift(); if (seen.has(c)) continue; seen.add(c);
+    for (const e of colUp.get(c) || []) { hops.push({ ...e, depth }); queue.push([e.s, depth + 1]); } }
+  return hops;
+}
+function nearestExpr(cid) { // the first expression above a column that isn't a plain copy
+  const hops = derivation(cid), first = hops.find(h => h.steps.length)?.depth;
+  if (first == null) return null;
+  const at = hops.filter(h => h.depth === first && h.steps.length);
+  return { exprs:[...new Set(at.map(h => h.steps[0]))], via:[...new Set(at.map(h => h.via))] };
+}
+function groupHops(hops) { // one entry per column, one line per way it is computed
+  const by = new Map();
+  hops.forEach(h => { if (!by.has(h.t)) by.set(h.t, { t:h.t, depth:h.depth, ways:new Map() });
+    const k = h.steps.join(" ← ") + "|" + h.via, ways = by.get(h.t).ways;
+    if (!ways.has(k)) ways.set(k, { steps:h.steps, via:h.via, sources:[] }); ways.get(k).sources.push(h.s); });
+  return [...by.values()].map(g => ({ ...g, ways:[...g.ways.values()] }));
+}
+
+// ---------------------------------------------------------------- state
+// start on the object with the most relationships
+const degree = new Map(); EDGES.forEach(e => { degree.set(e.s, (degree.get(e.s) || 0) + 1); degree.set(e.t, (degree.get(e.t) || 0) + 1); });
+const START = G.nodes.filter(n => n.kind === "table" || n.kind === "view").sort((a, b) => (degree.get(b.id) || 0) - (degree.get(a.id) || 0) || a.id.localeCompare(b.id))[0]?.id || G.nodes[0]?.id;
+const state = {
+  mode:"explore", focus:START, selected:START, lit:false, column:null, panel:null,
+  up:2, down:1, columns:"auto",
+  rel:{ flow:true, join:true, runtime:true, fk:false }, markUnseen:false,
+  include:{ files:true, views:true, outside:true }, schemas:new Set(schemaNames), hidden:new Set(), extra:new Set(),
+  arrange:"layered", direction:"right", group:false, color:"schema", highlight:"direct",
+  history:[], compare:[],
+  mapColor:"schema", mapHighlight:"lineage", route:null, query:"",
+  mapLevel:null, mapSchema:null, selSchema:null, // the map's level (decided on first visit), the schema it is zoomed to, the schema selected
+};
+
+// ---------------------------------------------------------------- search
+const index = [];
+G.nodes.forEach(n => {
+  index.push({ kind:n.kind, id:n.id, text:`${n.id} ${n.comment || ""} ${Object.entries(n.tags).map(([k, v]) => k + " " + v).join(" ")}`, label:label(n.id), why:n.comment });
+  n.columns.forEach(c => index.push({ kind:"column", id:`${n.id}.${c.name}`, text:`${c.name} ${c.comment || ""} ${Object.keys(c.tags).join(" ")}`, label:`${short(n.id)}.${c.name}`, why:c.comment }));
+});
+function search(q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean); if (!words.length) return [];
+  return index.map(e => {
+    const t = e.text.toLowerCase(), name = e.label.toLowerCase(); let s = 0;
+    for (const w of words) { if (!t.includes(w)) return null; s += name.includes(w) ? 3 : 1; }
+    const n = byId.get(e.kind === "column" ? tableOf(e.id) : e.id);
+    return { ...e, score: s + (n.tags.certified ? 1 : 0) + Math.log1p(dependents(n.id)) / 4 + (e.kind === "column" ? 0 : 0.5) };
+  }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 30);
+}
+let hits = [], hitSel = 0;
+$("#search").addEventListener("input", e => {
+  hits = search(e.target.value); hitSel = 0; showHits();
+  if (state.mode === "map") { state.query = e.target.value; state.route = null; state.selected = null; renderMap(); }
+});
+$("#search").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { hitSel = Math.min(hitSel + 1, hits.length - 1); showHits(); e.preventDefault(); }
+  if (e.key === "ArrowUp") { hitSel = Math.max(hitSel - 1, 0); showHits(); e.preventDefault(); }
+  if (e.key === "Enter" && hits[hitSel]) pick(hits[hitSel]);
+  if (e.key === "Escape") { $("#results").style.display = "none"; e.target.blur(); }
+});
+document.addEventListener("keydown", e => { if (e.key === "/" && document.activeElement.tagName !== "INPUT") { $("#search").focus(); e.preventDefault(); } });
+document.addEventListener("click", e => { if (!$("#searchbox").contains(e.target)) $("#results").style.display = "none"; });
+function showHits() {
+  $("#results").innerHTML = hits.map((h, i) => { const n = byId.get(h.kind === "column" ? tableOf(h.id) : h.id);
+    return `<div class="r ${i === hitSel ? "sel" : ""}" data-i="${i}"><span class="k">${h.kind}</span>${esc(h.label)} ${n.tags.certified ? '<span class="chip cert">certified</span>' : ""}<br><span class="why">${esc(h.why || "")}</span></div>`; }).join("")
+    || `<div class="r why">Nothing matches</div>`;
+  $("#results").style.display = "block";
+  $("#results").querySelectorAll(".r[data-i]").forEach(el => el.onclick = () => pick(hits[+el.dataset.i]));
+}
+function pick(h) {
+  $("#results").style.display = "none";
+  const tid = h.kind === "column" ? tableOf(h.id) : h.id;
+  if (state.mode === "compare") { if (!state.compare.includes(tid)) state.compare.push(tid); render(); return; }
+  if (state.mode === "map") { const n = byId.get(tid);
+    if (inCatalog(n)) { state.mapLevel = "tables"; state.mapSchema = n.schema; }
+    state.selected = tid; state.selSchema = null; state.panel = null; renderMap(); return; }
+  focusOn(tid, h.kind === "column" ? h.id : null);
+}
+
+// ---------------------------------------------------------------- navigation
+function focusOn(id, column = null) {
+  if (state.mode !== "explore") setMode("explore", false);
+  if (id !== state.focus) { state.history.push(state.focus); state.extra = new Set(); }
+  state.focus = id; state.selected = id; state.lit = false; state.column = column; state.panel = column ? "column" : null;
+  state.hidden.delete(id); render();
+}
+function back() { const id = state.history.pop(); if (!id) return; state.focus = id; state.selected = id; state.lit = false; state.column = null; state.panel = null; state.extra = new Set(); render(); }
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$("#gaps").onclick = () => { if (state.mode === "compare") setMode("explore"); state.panel = "gaps"; renderPanel(); };
+function setMode(m, draw = true) {
+  if (m !== state.mode) { state.panel = null; state.query = ""; $("#search").value = ""; $("#results").style.display = "none";
+    if (m === "map") { state.selected = null; state.selSchema = null; } if (m === "explore") { state.selected = state.focus; state.lit = false; } }
+  state.mode = m; document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  const graph = m !== "compare";
+  ["#view", "#stage", "#panel"].forEach(s => $(s).classList.toggle("hidden", !graph)); $("#page").classList.toggle("hidden", graph);
+  $("#search").placeholder = m === "compare" ? "Add a table to compare…" : m === "map" ? "Search by business words: revenue, refund, campaign…" : "Search tables, columns, comments, tags…  ( / )";
+  if (draw) render();
+}
+function render() { if (state.mode === "explore") renderExplore(); else if (state.mode === "map") renderMap(); else renderCompare(); }
+
+// ---------------------------------------------------------------- view sidebar controls
+const seg = (key, options, cur, off = false) => `<div class="seg${off ? " off" : ""}" data-seg="${key}">${options.map(([v, t]) => `<button data-v="${v}" class="${String(cur) === String(v) ? "on" : ""}">${t}</button>`).join("")}</div>`;
+const field = (lbl, control) => `<div class="field"><span class="lbl">${lbl}</span>${control}</div>`;
+const check = (key, on, text, extra = "") => `<label class="check"><input type="checkbox" data-check="${key}" ${on ? "checked" : ""}>${extra}${text}</label>`;
+const lineKey = cls => `<svg class="linekey" width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="edge ${cls}"/></svg>`;
+const depthOpts = [[0, "0"], [1, "1"], [2, "2"], [3, "3"], ["all", "All"]];
+const depthVal = v => v === Infinity ? "all" : v;
+function colorKey(mode) {
+  if (mode === "written") return Object.entries(AGE).map(([k, v]) => `<span><i class="swatch" style="background:${v};border:1px solid #d0d7de"></i>${AGE_TEXT[k]}</span>`).join("")
+    + `<span>${G.meta.lineage ? `the latest write the lineage recorded, before the snapshot (${when(G.meta.taken_at)})` : "the snapshot has no lineage, so no writes are known"}</span>`;
+  if (mode === "schema") return `<span>A tint of each schema's color, as listed under Include</span>`;
+  return `<span>Plain cards; the left edge still shows the schema</span>`;
+}
+function bindView(root) {
+  root.querySelectorAll("[data-seg]").forEach(g => g.querySelectorAll("button").forEach(b => b.onclick = () => {
+    const k = g.dataset.seg, v = b.dataset.v;
+    state[k] = v === "all" ? Infinity : /^\d+$/.test(v) ? +v : v; render();
+  }));
+  root.querySelectorAll("[data-check]").forEach(c => c.onchange = () => {
+    const [group, key] = c.dataset.check.split(".");
+    if (group === "schema") c.checked ? state.schemas.add(key) : state.schemas.delete(key);
+    else if (key) state[group][key] = c.checked; else state[group] = c.checked;
+    render();
+  });
+  root.querySelectorAll("[data-select]").forEach(s => s.onchange = () => { state[s.dataset.select] = s.value; render(); });
+}
+function viewExplore(hiddenCount) {
+  const prev = state.history[state.history.length - 1];
+  $("#view").innerHTML = `
+    <section><h4>Focus</h4><div class="focusname">${esc(label(state.focus))}</div>
+      <button class="btn" id="v-back" ${prev ? "" : "disabled"}>← Back${prev ? " to " + esc(short(prev).split(".").pop()) : ""}</button>
+      ${state.history.length ? `<div class="trail">${state.history.slice(-6).map(h => `<a href="#" data-goto="${esc(h)}">${esc(short(h).split(".").pop())}</a>`).join("")}</div>` : ""}
+      <div class="sub" style="margin-top:8px">Double-click a table to focus on it. Click <b>+</b> on a card's side to bring in its neighbors.</div></section>
+    <section><h4>Depth</h4>
+      ${field("Upstream", seg("up", depthOpts, depthVal(state.up)))}
+      ${field("Downstream", seg("down", depthOpts, depthVal(state.down)))}</section>
+    <section><h4>Relationships</h4>
+      ${check("rel.flow", state.rel.flow, "Data flow", lineKey(""))}
+      ${check("rel.join", state.rel.join, "Read only to join or filter", lineKey("join"))}
+      ${check("rel.runtime", state.rel.runtime, "Seen by the lineage, not in any SQL", lineKey("runtime"))}
+      ${check("rel.fk", state.rel.fk, "Foreign keys (parent → child)", lineKey("fk"))}
+      <div class="${G.meta.lineage ? "" : "dim"}">${check("markUnseen", state.markUnseen, "Mark flows in the SQL the lineage never saw", lineKey("unseen"))}</div></section>
+    <section><h4>Columns</h4>${seg("columns", [["auto", "Auto"], ["all", "All"], ["keys", "Keys"], ["none", "None"]], state.columns)}
+      <div class="sub" style="margin-top:6px">${{ auto:"The focus table's columns; others when the view is small, or the columns on a trace.", all:"Every column of every table.", keys:"Only primary and foreign key columns.", none:"Table names only; a trace still shows its columns." }[state.columns]}</div></section>
+    <section><h4>Include</h4>
+      ${check("include.views", state.include.views, "Views")}
+      ${check("include.files", state.include.files, "Files read with read_files")}
+      ${check("include.outside", state.include.outside, "Objects outside the snapshot")}
+      <div class="field" style="margin-top:10px"><span class="lbl">Schemas <span class="tinylinks"><a href="#" id="s-all">all</a><a href="#" id="s-none">none</a></span></span>
+      ${G.schemas.filter(s => !s.outside).map(s => s.name).map(s => check("schema." + s, state.schemas.has(s), s, `<i class="swatch" style="background:${schemaColor(s)}"></i>`)).join("")}</div>
+      ${hiddenCount ? `<div>${hiddenCount} hidden by hand · <a href="#" id="v-unhide">show them</a></div>` : ""}</section>
+    <section><h4>Layout</h4>
+      ${field("Arrangement", seg("arrange", [["layered", "Layered"], ["free", "Free"]], state.arrange))}
+      <div class="sub" style="margin:-6px 0 10px">${state.arrange === "layered" ? "In columns by depth, so direction reads at a glance." : "No direction, and no grouping: suits key diagrams, where nothing is upstream."}</div>
+      ${field("Direction", seg("direction", [["right", "Left to right"], ["down", "Top to bottom"]], state.direction, state.arrange === "free"))}
+      <div class="${state.arrange === "free" ? "dim" : ""}">${check("group", state.group, "Group tables by schema")}</div>
+      <div class="sub" style="margin-top:6px">The whole catalog is laid out when the site is built, and every view keeps that order, so tables stay where you saw them as the view changes. The crossing count is at the bottom left.</div></section>
+    <section><h4>Color</h4>${field("Fill tables by", `<select data-select="color">${[["schema", "Schema"], ["written", "Last written"], ["none", "Nothing"]].map(([v, t]) => `<option value="${v}" ${state.color === v ? "selected" : ""}>${t}</option>`).join("")}</select><div class="key">${colorKey(state.color)}</div>`)}</section>
+    <section><h4>Selection</h4>${field("Clicking a table highlights", seg("highlight", [["direct", "Its edges"], ["lineage", "All up & downstream"]], state.highlight))}
+      <div class="key"><span>${lineKey("hl-up")} upstream</span><span>${lineKey("hl-down")} downstream</span></div></section>`;
+  bindView($("#view"));
+  $("#v-back").onclick = back;
+  $("#view").querySelectorAll("[data-goto]").forEach(a => a.onclick = ev => { ev.preventDefault(); focusOn(a.dataset.goto); });
+  $("#s-all").onclick = ev => { ev.preventDefault(); state.schemas = new Set(schemaNames); render(); };
+  $("#s-none").onclick = ev => { ev.preventDefault(); state.schemas = new Set(["(files)"]); render(); };
+  if ($("#v-unhide")) $("#v-unhide").onclick = ev => { ev.preventDefault(); state.hidden = new Set(); render(); };
+}
+
+// ---------------------------------------------------------------- layout
+// The build lays out the whole catalog once per arrangement (build_layouts.py, with Graphviz), keeping
+// the tidiest of many tries. A view here keeps the build's order: ELK's interactive mode reads the
+// places it is given as the layers and the order within each layer, then compacts the view and routes
+// its edges. So two tables never swap places when the view changes, and the same view always draws
+// the same way. `fresh: true` lays a view out from scratch instead, trying seeds; it is kept only to
+// measure what the fixed order costs.
+const elk = new ELK();
+const W = 250, HDR = 30, RH = 18;
+const TRIES = 8;
+const PRE = G.layouts || null;
+// How a view keeps the build's layout, chosen by measuring (stability.py): how often two tables trade
+// places as a view grows, against the crossings that costs.
+//   order:   ELK reads the tables in the build's order and keeps it unless breaking it saves crossings,
+//            at this exchange rate (0.5: two order violations weigh as much as one crossing);
+//            null keeps the build's places outright (grouped views: elkjs 0.9.3 fails on model order
+//            inside groups), and 0 lets ELK reorder freely;
+//   compact: the free arrangement closes the gaps hidden tables leave (0: never, so nothing moves).
+const keepFor = (arrange, group) => arrange === "free" ? { compact:0 } : group ? { order:null } : { order:0.5 };
+const preKey = (arrange, direction, group) => arrange === "free" ? "free" : direction + (group ? "/grouped" : "");
+function crosses(a, b, c, d) { // do segments ab and cd properly intersect?
+  const o = (p, q, r) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+  return o(a, b, c) * o(a, b, d) < 0 && o(c, d, a) * o(c, d, b) < 0;
+}
+const boxOf = pts => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of pts) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+  return { x0, y0, x1, y1 }; };
+const meet = (a, b) => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1;
+function countCrossings(lines) { // pairs of drawn edges that cross; edges sharing a table don't count
+  let n = 0;
+  lines = lines.map(L => ({ ...L, box:boxOf(L.pts) })).sort((a, b) => a.box.x0 - b.box.x0);
+  for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+    const A = lines[i], B = lines[j];
+    if (B.box.x0 > A.box.x1) break; // sorted by left edge: nothing further right can touch A
+    if (!meet(A.box, B.box) || A.s === B.s || A.s === B.t || A.t === B.s || A.t === B.t) continue;
+    outer: for (let p = 0; p + 1 < A.pts.length; p++) for (let q = 0; q + 1 < B.pts.length; q++)
+      if (crosses(A.pts[p], A.pts[p + 1], B.pts[q], B.pts[q + 1])) { n++; break outer; }
+  }
+  return n;
+}
+function countThrough(lines, pos) { // edges drawn across a table they don't connect
+  let n = 0;
+  for (const L of lines) { const lb = boxOf(L.pts); for (const [id, b] of pos) {
+    if (id === L.s || id === L.t || !meet(lb, { x0:b.x, y0:b.y, x1:b.x + b.w, y1:b.y + b.h })) continue;
+    const x0 = b.x + 3, y0 = b.y + 3, x1 = b.x + b.w - 3, y1 = b.y + b.h - 3;
+    const corners = [{ x:x0, y:y0 }, { x:x1, y:y0 }, { x:x1, y:y1 }, { x:x0, y:y1 }];
+    const inside = p => p.x > x0 && p.x < x1 && p.y > y0 && p.y < y1;
+    if (L.pts.some((p, i) => i + 1 < L.pts.length && (inside(p) || corners.some((c, k) => crosses(p, L.pts[i + 1], c, corners[(k + 1) % 4]))))) n++;
+  } }
+  return n;
+}
+const score = L => L.crossings + 2 * L.through;
+function clip(box, toward) { // where the line from a box's center toward a point leaves the box
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2, dx = toward.x - cx, dy = toward.y - cy;
+  if (!dx && !dy) return { x:cx, y:cy };
+  const t = Math.min(dx ? (box.w / 2) / Math.abs(dx) : Infinity, dy ? (box.h / 2) / Math.abs(dy) : Infinity);
+  return { x:cx + dx * t, y:cy + dy * t };
+}
+function placed(kids, pre) { // the build's places, as top-left corners, centered on each table's spot
+  return kids.map(k => { const c = pre[k.id] || [0, 0]; return { ...k, x:c[0] - k.width / 2, y:c[1] - k.height / 2 }; });
+}
+// The build's order, as one rank per table: along a layer (top to bottom for left-to-right), then across.
+function rankBy(pre, direction) {
+  const ids = Object.keys(pre), a = direction === "down" ? 0 : 1, b = 1 - a;
+  return new Map(ids.sort((x, y) => pre[x][a] - pre[y][a] || pre[x][b] - pre[y][b]).map((id, i) => [id, i]));
+}
+async function layoutOnce(nodes, edges, { group, direction, arrange, layer, gap, seed, extra = {}, pre = null, keep }) {
+  let kids = nodes.map(n => ({ id:n.id, width:n.width, height:n.height }));
+  if (pre && arrange !== "free" && keep.order != null) { // ELK keeps the order it reads, unless breaking it saves crossings
+    const rank = rankBy(pre, direction);
+    kids.sort((x, y) => rank.get(x.id) - rank.get(y.id));
+    edges = [...edges].sort((x, y) => rank.get(x.s) - rank.get(y.s) || rank.get(x.t) - rank.get(y.t));
+  }
+  let opts, children;
+  if (arrange === "free" && pre) {
+    // keep the build's arrangement; push apart cards that grew (columns shown), then close the gaps
+    // hidden tables left, both without changing which table is left of, or above, which
+    const apart = await elk.layout({ id:"root", layoutOptions:{ "elk.algorithm":"sporeOverlap", "elk.spacing.nodeNode":String(gap * 2) }, children:placed(kids, pre) });
+    kids = apart.children.map(c => ({ id:c.id, width:c.width, height:c.height, x:c.x, y:c.y }));
+    opts = keep.compact ? { "elk.algorithm":"sporeCompaction", "elk.spacing.nodeNode":String(gap * keep.compact) } : { "elk.algorithm":"fixed" };
+    children = kids;
+  } else if (arrange === "free") {
+    opts = { "elk.algorithm":"stress", "elk.stress.desiredEdgeLength":String(layer * 5), "elk.randomSeed":String(seed), "elk.spacing.nodeNode":String(gap * 2), ...extra };
+    children = kids;
+  } else {
+    const sweep = { "elk.layered.crossingMinimization.strategy":"LAYER_SWEEP", "elk.layered.crossingMinimization.greedySwitch.type":"TWO_SIDED", "elk.layered.thoroughness":"40", "elk.randomSeed":String(seed) };
+    const strategy = !pre ? sweep
+      : keep.order == null ? { "elk.layered.layering.strategy":"INTERACTIVE", "elk.layered.cycleBreaking.strategy":"INTERACTIVE", "elk.layered.crossingMinimization.strategy":"INTERACTIVE" }
+      : { ...sweep, ...(keep.order ? { "elk.layered.considerModelOrder.strategy":"NODES_AND_EDGES",
+          "elk.layered.considerModelOrder.crossingCounterNodeInfluence":String(keep.order), "elk.layered.considerModelOrder.crossingCounterPortInfluence":String(keep.order) } : {}) };
+    opts = { "elk.algorithm":"layered", "elk.direction":direction === "down" ? "DOWN" : "RIGHT", "elk.edgeRouting":"SPLINES",
+      "elk.layered.spacing.nodeNodeBetweenLayers":String(layer), "elk.spacing.nodeNode":String(gap), ...strategy, ...extra };
+    const places = pre && keep.order == null;
+    if (places) kids = placed(kids, pre);
+    children = kids;
+    if (group) {
+      opts["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
+      opts["org.eclipse.elk.json.edgeCoords"] = "ROOT";
+      const by = new Map(); kids.forEach(k => push(by, byId.get(k.id)?.schema || "?", k));
+      children = [...by].map(([s, ks]) => {
+        const gx = places ? Math.min(...ks.map(k => k.x)) - 12 : 0, gy = places ? Math.min(...ks.map(k => k.y)) - 30 : 0;
+        return { id:"group:" + s, x:gx, y:gy, layoutOptions:{ "elk.padding":"[top=30,left=12,bottom=12,right=12]", ...strategy },
+          children:places ? ks.map(k => ({ ...k, x:k.x - gx, y:k.y - gy })) : ks };
+      });
+    }
+  }
+  const out = await elk.layout({ id:"root", layoutOptions:opts, children, edges:edges.map(e => ({ id:e.id, sources:[e.s], targets:[e.t] })) });
+  const pos = new Map(), groups = [], off = new Map([["root", { x:0, y:0 }]]);
+  out.children.forEach(c => {
+    if (c.children) { groups.push({ schema:c.id.slice(6), x:c.x, y:c.y, w:c.width, h:c.height }); off.set(c.id, { x:c.x, y:c.y });
+      c.children.forEach(k => pos.set(k.id, { x:c.x + k.x, y:c.y + k.y, w:k.width, h:k.height })); }
+    else pos.set(c.id, { x:c.x, y:c.y, w:c.width, h:c.height });
+  });
+  let width = out.width, height = out.height;
+  if (arrange === "free") { // SPOrE leaves the drawing where it found it: move it to the origin
+    const x0 = Math.min(...[...pos.values()].map(p => p.x)), y0 = Math.min(...[...pos.values()].map(p => p.y));
+    pos.forEach(p => { p.x -= x0; p.y -= y0; });
+    width = Math.max(...[...pos.values()].map(p => p.x + p.w)); height = Math.max(...[...pos.values()].map(p => p.y + p.h));
+  }
+  // an edge inside one group comes back in that group's coordinates; a free layout gives straight lines
+  const routed = new Map((out.edges || []).map(le => [le.id, le]));
+  const paths = new Map(edges.map(e => {
+    const le = routed.get(e.id), s = le?.sections?.[0];
+    if (s && arrange !== "free") { const o = off.get(le.container) || { x:0, y:0 }; return [e.id, [s.startPoint, ...(s.bendPoints || []), s.endPoint].map(p => ({ x:p.x + o.x, y:p.y + o.y }))]; }
+    const a = pos.get(e.s), b = pos.get(e.t); if (!a || !b) return [e.id, null];
+    return [e.id, [clip(a, { x:b.x + b.w / 2, y:b.y + b.h / 2 }), clip(b, { x:a.x + a.w / 2, y:a.y + a.h / 2 })]];
+  }));
+  const seen = new Set(), lines = [];
+  edges.forEach(e => { const k = [e.s, e.t].sort().join("|"); if (seen.has(k) || !paths.get(e.id)) return; seen.add(k); lines.push({ s:e.s, t:e.t, pts:paths.get(e.id) }); });
+  return { pos, paths, groups, width, height, crossings:countCrossings(lines), through:countThrough(lines, pos) };
+}
+// A view of everything (the map) is drawn exactly as the build drew it: places, curves and boxes.
+function asBuilt(b, edges) {
+  const [cw, ch] = b.card;
+  const pos = new Map(Object.entries(b.pos).map(([id, [cx, cy]]) => [id, { x:cx - cw / 2, y:cy - ch / 2, w:cw, h:ch }]));
+  const routes = new Map(); b.routes.forEach(([s, t, pts, end]) => push(routes, s + "|" + t, [...pts, ...(end ? [end] : [])].map(([x, y]) => ({ x, y }))));
+  const used = new Map(), paths = new Map(edges.map(e => { const k = e.s + "|" + e.t, i = used.get(k) || 0; used.set(k, i + 1); return [e.id, routes.get(k)?.[i] || null]; }));
+  const seen = new Set(), lines = [];
+  edges.forEach(e => { const k = [e.s, e.t].sort().join("|"); if (seen.has(k) || !paths.get(e.id)) return; seen.add(k); lines.push({ s:e.s, t:e.t, pts:paths.get(e.id) }); });
+  return { pos, paths, groups:b.groups.map(([schema, x, y, w, h]) => ({ schema, x, y, w, h })), width:b.size[0], height:b.size[1],
+    crossings:b.crossings ?? countCrossings(lines), through:b.through ?? countThrough(lines, pos), tried:1, built:b, bezier:true };
+}
+// dot's curves: Bezier control points, then the point the arrow ends at
+const bezier = pts => { const n = pts.length - 1; let d = `M${pts[0].x},${pts[0].y}`;
+  for (let i = 1; i + 2 < n; i += 3) d += `C${pts[i].x},${pts[i].y} ${pts[i + 1].x},${pts[i + 1].y} ${pts[i + 2].x},${pts[i + 2].y}`;
+  return d + `L${pts[n].x},${pts[n].y}`; };
+const layoutCache = new Map();
+async function layout(nodes, edges, { group = false, direction = "right", arrange = "layered", layer = 90, gap = 24, tries, extra, fresh = false, keep, use } = {}) {
+  if (arrange === "free") group = false;
+  keep ??= keepFor(arrange, group);
+  const built = !fresh && PRE?.[use || preKey(arrange, direction, group)];
+  tries = built ? 1 : tries ?? (arrange === "free" ? 24 : TRIES);
+  const key = JSON.stringify([nodes.map(n => [n.id, n.width, n.height]), edges.map(e => e.id), group, direction, arrange, layer, gap, tries, extra, !!built, keep, use]);
+  if (layoutCache.has(key)) return layoutCache.get(key);
+  let best = null, first = null;
+  for (let seed = 1; seed <= tries; seed++) {
+    const L = await layoutOnce(nodes, edges, { group, direction, arrange, layer, gap, seed, extra, pre:built ? built.pos : null, keep });
+    if (seed === 1) first = L;
+    if (!best || score(L) < score(best) || (score(L) === score(best) && L.width * L.height < best.width * best.height)) best = L;
+    if (score(best) === 0) break;
+  }
+  const out = { ...best, tried:tries, firstTry:first, built:built || null };
+  if (layoutCache.size > 60) layoutCache.delete(layoutCache.keys().next().value);
+  layoutCache.set(key, out);
+  return out;
+}
+
+// ---------------------------------------------------------------- drawing, shared by Explore and Map
+const svg = d3.select("#svg"), gz = d3.select("#zoom");
+const zoom = d3.zoom().scaleExtent([0.15, 2.5]).on("zoom", e => gz.attr("transform", e.transform));
+svg.call(zoom).on("dblclick.zoom", null);
+const tip = $("#tip");
+const showTip = (e, html) => { tip.innerHTML = html; tip.style.display = "block"; tip.style.left = Math.min(e.clientX + 14, innerWidth - 440) + "px"; tip.style.top = (e.clientY + 14) + "px"; };
+const hideTip = () => tip.style.display = "none";
+const curve = d3.line().x(p => p.x).y(p => p.y).curve(d3.curveBasis);
+const READABLE = 0.4; // below this scale a card's text can't be read
+function fitScale(w, h, pad = 60) { const r = svg.node().getBoundingClientRect(); return Math.min(1.1, (r.width - pad) / w, (r.height - pad) / h); }
+function fit(w, h, pad = 60, x = 0, y = 0) {
+  const r = svg.node().getBoundingClientRect(), kx = (r.width - pad) / w, ky = (r.height - pad) / h;
+  let k = Math.min(1.1, kx, ky);
+  if (k < READABLE) k = Math.min(0.7, Math.max(kx, ky)); // fit the short side, start at the top or left
+  const tx = w * k <= r.width ? (r.width - w * k) / 2 - x * k : pad / 2 - x * k;
+  const ty = h * k <= r.height ? (r.height - h * k) / 2 - y * k : pad / 2 - y * k;
+  zoom.scaleExtent([Math.min(0.15, k), 2.5]);
+  svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+}
+function edgeClass(e) {
+  const c = ["edge", e.kind === "flow" ? "" : e.kind];
+  if (state.markUnseen && e.kind === "flow" && !e.observed) c.push("unseen");
+  return c.join(" ");
+}
+const markerFor = cls => { const w = / wide\b/.test(cls) ? "-w)" : ")"; // the overview's edges are wide: their arrows are sized in pixels
+  return cls.includes("hl-up") ? "url(#m-up" + w : cls.includes("hl-down") ? "url(#m-down" + w : cls.includes("runtime") ? "url(#m-runtime" + w : cls.includes("fk") ? null : "url(#m-edge" + w; };
+function edgeTip(e) {
+  if (e.kind === "fk") return `<b>foreign key</b> ${esc(e.fk.name)}<br><code>${esc(e.t)}</code> (${e.fk.columns.map(esc).join(", ")}) → <code>${esc(e.s)}</code> (${e.fk.parent_columns.map(esc).join(", ")})`;
+  return [`<code>${esc(short(e.s))}</code> → <code>${esc(short(e.t))}</code>`,
+    e.static ? `${e.kind === "join" ? "read to join or filter; no columns flow" : "data flows"} · in ${viaText(e.via)}` : "data flows, by the lineage the platform recorded",
+    e.static ? (e.observed ? `the lineage last saw it ${when(e.observed)}` : G.meta.lineage ? "the lineage never saw it" : "")
+      : `last seen ${when(e.observed)}; none of the SQL read here explains it`].filter(Boolean).join("<br>");
+}
+// a statement's name: a view, or a SQL file and the statement's number in it
+function viaText(via) {
+  if (via === "lineage") return "the platform's lineage";
+  const m = /^(.*\.sql):(\d+)$/.exec(via);
+  if (m) return `<b>${esc(m[1])}</b>, statement ${m[2]}`;
+  return byId.get(via)?.kind === "view" ? `the definition of <b>${esc(via)}</b>` : `<b>${esc(via)}</b>`;
+}
+const gapped = n => n.writers.some(w => w.errors.length);
+function fillFor(n, mode) {
+  if (mode === "written") return AGE[age(n)];
+  if (mode === "schema") return d3.color(schemaColor(n.schema)).copy({ opacity:.12 }).formatRgb();
+  return "#fff";
+}
+const cardHeight = (n, cols) => HDR + (cols.length ? cols.length * RH + 6 + (cols.length < n.columns.length ? 10 : 0) : 0);
+function drawCard(g, n, cols, opts) {
+  const h = cardHeight(n, cols);
+  g.append("rect").attr("width", W).attr("height", h).attr("rx", 6).style("fill", "#fff");
+  g.append("rect").attr("class", "box").attr("width", W).attr("height", h).attr("rx", 6).style("fill", fillFor(n, state.color));
+  g.append("rect").attr("width", 6).attr("height", h).attr("rx", 3).style("fill", schemaColor(n.schema));
+  const hdr = g.append("g").attr("class", "hdr");
+  hdr.append("rect").attr("x", 6).attr("width", W - 6).attr("height", HDR).style("fill", "transparent");
+  hdr.append("text").attr("x", 14).attr("y", HDR / 2).style("fill", "#57606a").text({ table:"▦", view:"◇", files:"🗀", external:"↗" }[n.kind] || "?");
+  hdr.append("text").attr("x", 30).attr("y", HDR / 2).style("font-weight", 600).text((gapped(n) ? "⚠ " : "") + trunc(n.kind === "files" ? short(n.id) : n.name, 26));
+  if (n.kind !== "files") hdr.append("text").attr("x", W - 10).attr("y", HDR / 2).attr("text-anchor", "end").style("fill", "#8c959f").style("font-size", "11px").text(n.schema);
+  if (n.tags.certified) hdr.append("text").attr("x", W - 14 - 7 * n.schema.length).attr("y", HDR / 2).attr("text-anchor", "end").style("fill", "#1a7f37").text("✓");
+  if (cols.length < n.columns.length && cols.length) g.append("text").attr("x", W - 10).attr("y", h - 6).attr("text-anchor", "end").style("font-size", "10px").style("fill", "#8c959f").text(`+${n.columns.length - cols.length} more`);
+  cols.forEach((c, i) => {
+    const cid = `${n.id}.${c.name}`;
+    const row = g.append("g").attr("class", "row " + (opts.rowClass?.(cid) || "")).attr("transform", `translate(0,${HDR + i * RH})`);
+    row.append("rect").attr("x", 7).attr("width", W - 8).attr("height", RH).style("fill", "transparent");
+    const key = n.pk.includes(c.name) ? "PK" : n.fks.some(f => f.columns.includes(c.name)) ? "FK" : "";
+    row.append("text").attr("x", 14).attr("y", RH / 2).style("font-size", "10px").style("fill", "#9a6700").text(key);
+    row.append("text").attr("x", 34).attr("y", RH / 2).text(trunc(c.name, 22) + (Object.keys(c.tags).length ? " •" : "")).style("fill", Object.keys(c.tags).length ? "#cf222e" : null);
+    row.append("text").attr("x", W - 10).attr("y", RH / 2).attr("text-anchor", "end").style("fill", "#8c959f").style("font-size", "11px").text(trunc(c.type, 16));
+    row.on("click", ev => { ev.stopPropagation(); opts.onColumn(cid); })
+       .on("mousemove", ev => showTip(ev, `<code>${esc(cid)}</code> ${esc(c.type)}<br>${esc(c.comment || "")}${Object.keys(c.tags).length ? "<br>tags: " + esc(JSON.stringify(c.tags)) : ""}<br><span style="opacity:.7">click to trace</span>`)).on("mouseleave", hideTip);
+  });
+  return h;
+}
+function handle(g, x, y, n, title, onClick) {
+  const hg = g.append("g").attr("class", "handle").attr("transform", `translate(${x},${y})`);
+  hg.append("circle").attr("r", 9); hg.append("text").text("+" + n);
+  hg.on("click", ev => { ev.stopPropagation(); onClick(); }).on("mousemove", ev => showTip(ev, title)).on("mouseleave", hideTip);
+}
+function crossingNote(L) {
+  const n = (k, w) => `${k} ${w}${k === 1 ? "" : "s"}`;
+  const was = score(L.firstTry) > score(L) ? ` (the first had ${n(L.firstTry.crossings, "crossing")}${L.firstTry.through ? `, ${L.firstTry.through} behind a table` : ""})` : "";
+  const what = `${n(L.crossings, "edge crossing")}${L.through ? `, ${L.through} behind a table` : ""}`;
+  if (L.built) return `${what} · in the build's order${L.built.tries > 1 ? `, the tidiest of ${L.built.tries} layouts it tried` : ""}`;
+  return L.tried === 1 ? what : `${what}: the tidiest of ${L.tried} arrangements tried${was}`;
+}
+
+// Highlighting a selection changes classes on what is drawn, with no new layout.
+let drawn = null; // { edges:[{e, el, base}], nodes:Map(id → g) }
+function highlight(id, mode) {
+  if (!drawn) return;
+  const E = drawn.edges.map(d => d.e), upE = new Set(), dnE = new Set(), touched = new Set(id ? [id] : []);
+  if (id && mode === "direct") E.forEach(e => { if (e.t === id) upE.add(e.id); if (e.s === id) dnE.add(e.id); });
+  else if (id) {
+    const ua = new Map(), da = new Map(); E.forEach(e => { push(ua, e.t, e); push(da, e.s, e); });
+    const A = closure(id, ua, "s"), D = closure(id, da, "t");
+    E.forEach(e => { if (A.has(e.s) && A.has(e.t)) upE.add(e.id); if (D.has(e.s) && D.has(e.t)) dnE.add(e.id); });
+  }
+  drawn.edges.forEach(({ e, el, base }) => {
+    const cls = upE.has(e.id) ? base + " hl-up" : dnE.has(e.id) ? base + " hl-down" : id ? base + " faded" : base;
+    el.attr("class", cls).attr("marker-end", markerFor(cls));
+    if (upE.has(e.id) || dnE.has(e.id)) { touched.add(e.s); touched.add(e.t); }
+  });
+  drawn.nodes.forEach((g, nid) => g.classed("faded", !!id && !touched.has(nid)).classed("sel", nid === id));
+}
+
+// ---------------------------------------------------------------- explore
+function visible(id) {
+  const n = byId.get(id); if (!n) return false;
+  if (id === state.focus) return true;
+  if (state.hidden.has(id)) return false;
+  if (n.kind === "files") return state.include.files;
+  if (n.kind === "external") return state.include.outside;
+  if (n.kind === "view" && !state.include.views) return false;
+  return state.schemas.has(n.schema);
+}
+function traceOf(cid) {
+  if (!cid) return null;
+  const u = closure(cid, colUp, "s"), d = closure(cid, colDown, "t");
+  return { up:u, down:d, tables:new Set([...u.keys(), ...d.keys()].map(tableOf)) };
+}
+let seq = 0;
+let lastPos = new Map(); // where each table was drawn last, so a new view can move it from there
+const at = p => `translate(${p.x},${p.y})`;
+async function renderExplore() {
+  const edges = EDGES.filter(e => state.rel[e.kind] && visible(e.s) && visible(e.t));
+  const ua = new Map(), da = new Map(); edges.forEach(e => { push(ua, e.t, e); push(da, e.s, e); });
+  const trace = traceOf(state.column);
+  const ids = new Set([...closure(state.focus, ua, "s", state.up).keys(), ...closure(state.focus, da, "t", state.down).keys()]);
+  state.extra.forEach(x => visible(x) && ids.add(x));
+  if (trace) trace.tables.forEach(t => visible(t) && ids.add(t));
+  const shown = edges.filter(e => ids.has(e.s) && ids.has(e.t));
+  viewExplore(state.hidden.size);
+  const cols = new Map([...ids].map(id => {
+    const n = byId.get(id), tr = c => trace && (trace.up.has(`${id}.${c.name}`) || trace.down.has(`${id}.${c.name}`));
+    const isKey = c => n.pk.includes(c.name) || n.fks.some(f => f.columns.includes(c.name));
+    if (trace && id !== tableOf(state.column) && state.columns !== "all") { const k = n.columns.filter(tr); if (k.length) return [id, k]; }
+    if (state.columns === "all") return [id, n.columns];
+    if (state.columns === "keys") return [id, n.columns.filter(isKey)];
+    if (state.columns === "none") return [id, []];
+    return [id, id === state.focus || trace?.tables.has(id) || ids.size <= 6 ? n.columns : []];
+  }));
+  const mine = ++seq;
+  const L = await layout([...ids].sort().map(id => ({ id, width:W, height:cardHeight(byId.get(id), cols.get(id)) })), shown,
+    { group:state.group, direction:state.direction, arrange:state.arrange });
+  if (mine !== seq) return;
+  gz.selectAll("*").remove(); hideTip();
+  const rg = gz.append("g"), eg = gz.append("g"), ng = gz.append("g"), tg = gz.append("g");
+  // tables still in view glide to their new places; the edges and anything new fade in after them
+  const prev = lastPos, moving = [...L.pos.keys()].some(id => prev.has(id));
+  lastPos = new Map([...L.pos].map(([id, p]) => [id, { x:p.x, y:p.y }]));
+  if (moving) [rg, eg, tg].forEach(g => g.style("opacity", 0).transition().delay(300).duration(250).style("opacity", 1));
+  L.groups.forEach(gr => { const g = rg.append("g").attr("class", "region").attr("transform", `translate(${gr.x},${gr.y})`);
+    g.append("rect").attr("width", gr.w).attr("height", gr.h).attr("rx", 10).style("fill", schemaColor(gr.schema)).style("fill-opacity", .12);
+    g.append("text").attr("x", 12).attr("y", 18).text(gr.schema); });
+  drawn = { edges:[], nodes:new Map() };
+  const draw = state.arrange === "free" ? d3.line().x(p => p.x).y(p => p.y) : curve;
+  shown.forEach(e => {
+    const pts = L.paths.get(e.id); if (!pts) return;
+    const base = edgeClass(e);
+    const el = eg.append("path").attr("class", base).attr("d", draw(pts)).attr("marker-end", markerFor(base));
+    eg.append("path").attr("class", "edge-hit").attr("d", draw(pts)).on("mousemove", ev => showTip(ev, edgeTip(e))).on("mouseleave", hideTip);
+    drawn.edges.push({ e, el, base });
+  });
+  const rowClass = cid => cid === state.column ? "picked" : trace?.up.has(cid) ? "up" : trace?.down.has(cid) ? "down" : "";
+  L.pos.forEach((p, id) => {
+    const n = byId.get(id);
+    const g = ng.append("g").attr("class", "node" + (id === state.focus ? " focus" : "")).attr("transform", at(prev.get(id) || p));
+    if (prev.has(id)) g.transition().duration(450).attr("transform", at(p));
+    else if (moving) g.style("opacity", 0).transition().delay(300).duration(250).style("opacity", 1).on("end", function () { d3.select(this).style("opacity", null); });
+    const h = drawCard(g, n, cols.get(id), { rowClass, onColumn: cid => { state.column = cid; state.selected = tableOf(cid); state.panel = "column"; renderExplore(); } });
+    const hiddenUp = [...new Set((ua.get(id) || []).map(e => e.s).filter(x => !ids.has(x)))];
+    const hiddenDown = [...new Set((da.get(id) || []).map(e => e.t).filter(x => !ids.has(x)))];
+    const across = state.arrange === "layered" && state.direction === "down";
+    if (hiddenUp.length) handle(g, across ? W / 2 - 14 : -11, across ? -11 : HDR / 2, hiddenUp.length, `Show ${hiddenUp.length} more upstream:<br>${hiddenUp.map(x => esc(short(x))).join("<br>")}`, () => { hiddenUp.forEach(x => state.extra.add(x)); renderExplore(); });
+    if (hiddenDown.length) handle(g, across ? W / 2 + 14 : W + 11, across ? h + 11 : HDR / 2, hiddenDown.length, `Show ${hiddenDown.length} more downstream:<br>${hiddenDown.map(x => esc(short(x))).join("<br>")}`, () => { hiddenDown.forEach(x => state.extra.add(x)); renderExplore(); });
+    g.select(".hdr")
+      .on("click", ev => { ev.stopPropagation(); select(id); })
+      .on("dblclick", ev => { ev.stopPropagation(); focusOn(id); })
+      .on("mouseenter", () => { if (!trace) highlight(id, state.highlight); })
+      .on("mouseleave", () => { hideTip(); if (!trace) highlight(state.lit ? state.selected : null, state.highlight); })
+      .on("mousemove", ev => showTip(ev, `<b>${esc(label(id))}</b><br>${esc(n.comment || "")}<br><span style="opacity:.7">click to select · double-click to focus</span>`));
+    drawn.nodes.set(id, g);
+  });
+  if (trace) { // column edges over the cards, row to row
+    const rowY = cid => { const p = L.pos.get(tableOf(cid)), i = (cols.get(tableOf(cid)) || []).findIndex(c => c.name === colName(cid)); return p && i >= 0 ? p.y + HDR + i * RH + RH / 2 : null; };
+    G.column_edges.forEach(e => {
+      const isUp = trace.up.has(e.t) && trace.up.has(e.s), isDown = trace.down.has(e.s) && trace.down.has(e.t);
+      if (!isUp && !isDown) return;
+      const ps = L.pos.get(tableOf(e.s)), pt = L.pos.get(tableOf(e.t)), y1 = rowY(e.s), y2 = rowY(e.t);
+      if (!ps || !pt || y1 == null || y2 == null) return;
+      const x1 = ps.x + W, x2 = pt.x, dx = Math.max(40, Math.abs(x2 - x1) / 2);
+      tg.append("path").attr("class", "trace " + (isUp ? "up" : "down")).attr("d", `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`)
+        .on("mousemove", ev => showTip(ev, `<code>${esc(short(e.s))}</code> → <code>${esc(short(e.t))}</code><br>${e.steps.length ? e.steps.map(s => `<code>${esc(s)}</code>`).join(" ← ") : "copied as is"}<br>via ${esc(e.via)}`)).on("mouseleave", hideTip);
+    });
+    drawn.nodes.forEach((g, id) => g.classed("faded", !trace.tables.has(id)));
+    drawn.edges.forEach(({ e, el }) => el.classed("faded", !(trace.tables.has(e.s) && trace.tables.has(e.t))));
+  } else highlight(state.lit ? state.selected : null, state.highlight);
+  $("#hint").innerHTML = (trace ? `Tracing <b>${esc(short(state.column))}</b>: blue feeds it, purple is fed by it · click the background to stop · `
+    : `${ids.size} tables · ${state.lit ? "click the background to clear the highlight" : "click a table to highlight its edges"} · `) + crossingNote(L);
+  svg.on("click", ev => { if (ev.target !== svg.node()) return; if (state.column) { state.column = null; state.panel = null; renderExplore(); } else { state.selected = null; state.lit = false; highlight(null); renderPanel(); } });
+  fit(L.width, L.height);
+  renderPanel();
+}
+function select(id) {
+  const hadTrace = !!state.column;
+  state.selected = id; state.lit = true; state.panel = null; state.column = null;
+  if (hadTrace) return renderExplore();
+  highlight(id, state.highlight); renderPanel();
+}
+
+// ---------------------------------------------------------------- the side panel
+function renderPanel() {
+  if (state.panel === "gaps") return panelGaps();
+  if (state.panel === "column" && state.column) return panelColumn(state.column);
+  if (state.mode === "map" && state.route) return panelRoute();
+  if (state.mode === "map" && state.mapLevel === "schemas" && state.selSchema) return panelSchema(state.selSchema);
+  if (state.mode === "map" && !state.selected && !state.query && state.mapLevel === "tables" && state.mapSchema) return panelSchema(state.mapSchema);
+  if (!state.selected) return state.mode === "map" ? panelCompass() : panelNode(state.focus);
+  panelNode(state.selected);
+}
+const link = id => byId.has(id) ? `<a href="#" data-goto="${esc(id)}"><code>${esc(short(id))}</code></a>` : `<code>${esc(short(id))}</code>`;
+function wirePanel() {
+  const p = $("#panel");
+  p.querySelectorAll("[data-goto]").forEach(a => a.onclick = ev => { ev.preventDefault(); focusOn(a.dataset.goto); });
+  p.querySelectorAll("[data-col]").forEach(r => r.onclick = () => focusOn(tableOf(r.dataset.col), r.dataset.col));
+  p.querySelectorAll("[data-act]").forEach(b => b.onclick = () => {
+    const id = b.dataset.id, a = b.dataset.act;
+    if (a === "focus") focusOn(id);
+    if (a === "compare") { if (!state.compare.includes(id)) state.compare.push(id); setMode("compare"); }
+    if (a === "hide") { state.hidden.add(id); state.selected = null; renderExplore(); }
+  });
+}
+function panelGaps() {
+  $("#panel").innerHTML = `<h2>Lineage gaps</h2>
+    <p>sqlglot couldn't follow the lineage of ${G.gaps.length} statement${G.gaps.length === 1 ? "" : "s"}. The objects they write are drawn, and marked ⚠, but some
+    of their column lineage, or all of it, is missing. ${G.meta.lineage ? "Edges the platform's lineage recorded are still drawn." : ""}</p>
+    ${G.gaps.map(g => `<div class="gap">${g.target ? link(g.target) : "<i>an unread statement</i>"} <span class="sub">· ${viaText(g.via)}</span>
+      <br>${g.errors.map(esc).join("<br>")}<details><summary>SQL</summary><pre>${esc(g.sql)}</pre></details></div>`).join("")}`;
+  wirePanel();
+}
+function written(n) {
+  if (n.kind === "view") return `<span class="status view">a view: computed when it is read</span>`;
+  if (n.kind !== "table") return `<span class="status outside">outside the snapshot</span>`;
+  if (!G.meta.lineage) return `<span class="status unseen">the snapshot has no lineage, so its writes aren't known</span>`;
+  if (!n.written) return `<span class="status unseen">no write in the lineage</span>`;
+  return `<span class="status ${age(n)}">${when(n.written)}</span> <span class="sub">${AGE_TEXT[age(n)]} the snapshot: the latest write the lineage recorded</span>`;
+}
+function panelNode(id) {
+  const n = byId.get(id); if (!n) return;
+  const tags = Object.entries(n.tags).map(([k, v]) => `<span class="chip ${k === "certified" ? "cert" : ""}">${esc(k)}${v === "true" ? "" : ": " + esc(v)}</span>`).join("");
+  const ups = EDGES.filter(e => e.t === id), downs = EDGES.filter(e => e.s === id);
+  const rel = e => ({ flow:"", join:"join or filter only", runtime:"by the lineage, no SQL", fk:"foreign key" })[e.kind];
+  const seenOnly = ups.filter(e => e.kind === "runtime");
+  const inside = n.kind === "table" || n.kind === "view";
+  $("#panel").innerHTML = `<h2>${esc(label(id))}</h2><div class="sub">${esc(n.kind)}${n.owner ? " · owned by " + esc(n.owner) : ""}</div>
+    <p>${esc(n.comment || "")}</p>${tags}
+    ${n.grain ? `<p><b>Grain:</b> one row per ${esc(n.grain)}${n.pk.length ? ` · key (${n.pk.map(esc).join(", ")})` : ""}</p>` : inside ? `<p class="sub">No grain stated in the comment${n.pk.length ? "; key (" + n.pk.map(esc).join(", ") + ")" : "; no declared key"}.</p>` : ""}
+    ${gapped(n) ? `<div class="gap">⚠ Its lineage from SQL is incomplete: ${n.writers.flatMap(w => w.errors).map(esc).join("; ")}</div>` : ""}
+    <p><button class="btn" data-act="focus" data-id="${esc(id)}">Focus here</button> ${inside ? `<button class="btn" data-act="compare" data-id="${esc(id)}">Add to compare</button>` : ""}
+       ${state.mode === "explore" && id !== state.focus ? `<button class="btn" data-act="hide" data-id="${esc(id)}">Hide from view</button>` : ""}</p>
+    <h3>Upstream (${ups.length})</h3>${ups.map(e => `<div>← ${link(e.s)} <span class="sub">${rel(e)}</span></div>`).join("") || `<p class="sub">Nothing.</p>`}
+    <h3>Downstream (${downs.length})</h3>${downs.map(e => `<div>→ ${link(e.t)} <span class="sub">${rel(e)}</span></div>`).join("") || `<p class="sub">Nothing.</p>`}
+    ${n.columns.length ? `<h3>Columns</h3><table class="cols">${n.columns.map(c => {
+      const key = n.pk.includes(c.name) ? "PK" : n.fks.some(f => f.columns.includes(c.name)) ? "FK" : "";
+      return `<tr class="click" data-col="${esc(id + "." + c.name)}"><td style="color:#9a6700">${key}</td><td><b>${esc(c.name)}</b>${Object.entries(c.tags).map(([k, v]) => ` <span class="chip pii">${esc(k)}: ${esc(v)}</span>`).join("")}<br><span class="sub">${esc(c.comment || "")}</span></td><td class="sub">${esc(c.type)}</td></tr>`; }).join("")}</table>` : ""}
+    ${n.writers.length || seenOnly.length ? `<h3>Written by</h3>${n.writers.map(w => `<p>${viaText(w.via)}</p>
+      ${w.filters.length ? `<p>Rows arrive only where ${w.filters.map(f => `<code>${esc(f)}</code>`).join(" and ")}</p>` : ""}<details><summary>SQL</summary><pre>${esc(w.sql)}</pre></details>`).join("")}
+      ${seenOnly.length ? `<p class="sub">The lineage also saw it written from ${seenOnly.map(e => link(e.s)).join(", ")}, by something whose SQL wasn't read here.</p>` : ""}` : ""}
+    ${inside ? `<h3>Last written</h3><p>${written(n)}</p>
+      <h3>Definition</h3><p>${n.created ? `created ${when(n.created)}` : ""}${n.changed && n.changed !== n.created ? `<br>last changed ${when(n.changed)}` : ""}</p>` : ""}`;
+  wirePanel();
+}
+function panelColumn(cid) {
+  const n = byId.get(tableOf(cid)), c = n.columns.find(c => c.name === colName(cid));
+  const hops = derivation(cid), downs = closure(cid, colDown, "t"); downs.delete(cid);
+  const downTables = new Set([...downs.keys()].map(tableOf));
+  const rs = [...roots(cid)];
+  $("#panel").innerHTML = `<h2>${esc(short(cid))}</h2><div class="sub">${esc(c?.type || "")} · ${esc(c?.comment || "")}</div>
+    <h3>Where its values come from</h3>
+    ${hops.length ? groupHops(hops).map(g => `<div class="hop" style="margin-left:${g.depth * 12}px"><code>${esc(short(g.t))}</code>
+      ${g.ways.map(w => `<br>${w.via === "lineage" ? `<span class="sub">seen by the lineage; how it's computed isn't known</span>` : w.steps.length ? "= " + w.steps.map(s => `<span class="expr">${esc(s)}</span>`).join(" ← ") : `<span class="sub">copied as is</span>`}
+        <span class="sub">from</span> ${w.sources.map(x => `<code>${esc(short(x))}</code>`).join(", ")} <span class="sub">· ${viaText(w.via)}</span>`).join("")}</div>`).join("") : `<p class="sub">Nothing upstream${gapped(n) ? " that could be read: its SQL has lineage gaps" : ": this is where the value starts"}.</p>`}
+    ${rs.length && hops.length ? `<p><b>Ultimately from:</b> ${rs.map(r => `<code>${esc(short(r))}</code>`).join(", ")}</p>` : ""}
+    <h3>What reads it (${downs.size} columns in ${downTables.size} objects)</h3>
+    ${[...downs.entries()].sort((a, b) => a[1] - b[1]).map(([d, dist]) => `<div class="hop down" style="margin-left:${(dist - 1) * 12}px"><code>${esc(short(d))}</code></div>`).join("") || `<p class="sub">Nothing downstream.</p>`}
+    <p><button class="btn" id="untrace">Back to the table</button></p>`;
+  wirePanel();
+  $("#untrace").onclick = () => { state.column = null; state.panel = null; renderExplore(); };
+}
+
+// ---------------------------------------------------------------- map
+const MW = 180, MH = 34;
+const inCatalog = n => n && (n.kind === "table" || n.kind === "view");
+let maxDependents = 1;
+function viewMap() {
+  const level = state.mapLevel === "schemas";
+  $("#view").innerHTML = `
+    <section><h4>Level</h4>${field("Show", seg("mapLevel", [["schemas", "Schemas"], ["tables", "Tables"]], state.mapLevel))}
+      <div class="sub">${level ? "A box per schema, and an edge wherever one schema's tables feed another's. Double-click a schema to open its tables."
+        : state.mapSchema ? `Zoomed to <b>${esc(state.mapSchema)}</b>; drag and scroll for the rest. <a href="#" id="m-all">Show every schema</a>` : "Every table and view, in a region per schema."}</div></section>
+    <section><h4>Route</h4><div class="sub" style="margin-bottom:8px">How to join two tables: through declared keys, and the joins the SQL already makes.</div>
+      ${field("From", `<input class="txt" id="r-from" list="tables" placeholder="a table" value="${esc(state.route?.from || "")}">`)}
+      ${field("To", `<input class="txt" id="r-to" list="tables" placeholder="a table" value="${esc(state.route?.to || "")}">`)}
+      <button class="btn primary" id="r-go">Find a route</button> ${state.route ? `<button class="btn" id="r-clear">Clear</button>` : ""}
+      <datalist id="tables">${G.nodes.filter(inCatalog).map(n => `<option value="${esc(n.id)}">`).join("")}</datalist></section>
+    ${level ? "" : `<section><h4>Color</h4>${field("Fill tables by", `<select data-select="mapColor">${[["schema", "Domain"], ["written", "Last written"], ["none", "Nothing"]].map(([v, t]) => `<option value="${v}" ${state.mapColor === v ? "selected" : ""}>${t}</option>`).join("")}</select><div class="key">${colorKey(state.mapColor)}</div>`)}
+      <div class="key"><span><i class="swatch" style="background:#0969da;height:4px"></i>bar: how many objects depend on it</span><span>✓ certified</span></div></section>`}
+    <section><h4>Selection</h4>${field(`Clicking a ${level ? "schema" : "table"} highlights`, seg("mapHighlight", [["direct", "Its edges"], ["lineage", "All up & downstream"]], state.mapHighlight))}</section>`;
+  bindView($("#view"));
+  $("#r-go").onclick = () => { const f = $("#r-from").value, t = $("#r-to").value;
+    if (byId.has(f) && byId.has(t)) { state.route = { from:f, to:t, ...findRoute(f, t) }; state.selected = null; state.mapLevel = "tables"; renderMap(); } };
+  if ($("#m-all")) $("#m-all").onclick = ev => { ev.preventDefault(); state.mapSchema = null; renderMap(); };
+  if ($("#r-clear")) $("#r-clear").onclick = () => { state.route = null; renderMap(); };
+}
+async function renderMap() {
+  if (state.mapLevel == null) // a catalog too big to read whole opens on its schemas
+    state.mapLevel = PRE?.schemas && PRE.map?.size && G.schemas.filter(s => !s.outside).length > 1 && fitScale(...PRE.map.size, 30) < READABLE ? "schemas" : "tables";
+  viewMap();
+  if (state.mapLevel === "schemas") return renderSchemas();
+  const tables = G.nodes.filter(inCatalog);
+  const edges = EDGES.filter(e => e.kind !== "fk" && inCatalog(byId.get(e.s)) && inCatalog(byId.get(e.t)));
+  maxDependents = Math.max(1, ...tables.map(n => dependents(n.id)));
+  const L = PRE?.map?.routes ? asBuilt(PRE.map, edges) : await layout(tables.map(n => ({ id:n.id, width:MW, height:MH })), edges, { group:true, layer:50, gap:14 });
+  const draw = L.bezier ? bezier : curve;
+  lastPos = new Map();
+  gz.selectAll("*").remove(); hideTip();
+  const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = id => { if (!words.length) return true; const n = byId.get(id);
+    const t = (n.id + " " + n.comment + " " + n.columns.map(c => c.name + " " + (c.comment || "")).join(" ")).toLowerCase(); return words.every(w => t.includes(w)); };
+  const routeTables = new Set(state.route?.path || []);
+  const rg = gz.append("g"), eg = gz.append("g"), ng = gz.append("g");
+  L.groups.forEach(gr => { const meta = G.schemas.find(s => s.name === gr.schema);
+    const g = rg.append("g").attr("class", "region").attr("transform", `translate(${gr.x},${gr.y})`);
+    g.append("rect").attr("width", gr.w).attr("height", gr.h).attr("rx", 10).style("fill", schemaColor(gr.schema)).style("fill-opacity", .13);
+    g.append("text").attr("x", 12).attr("y", 18).text(`${gr.schema} · ${meta.domain}`).append("title").text(`${meta.comment} · ${meta.owner}`); });
+  drawn = { edges:[], nodes:new Map() };
+  edges.forEach(e => { const pts = L.paths.get(e.id); if (!pts) return;
+    const base = edgeClass(e) + ((words.length && !(matches(e.s) && matches(e.t))) || state.route ? " faded" : "")
+      + (state.mapSchema && byId.get(e.s).schema !== state.mapSchema && byId.get(e.t).schema !== state.mapSchema ? " quiet" : "");
+    const el = eg.append("path").attr("class", base).attr("d", draw(pts)).attr("marker-end", markerFor(base));
+    if (!base.includes(" quiet")) eg.append("path").attr("class", "edge-hit").attr("d", draw(pts)).on("mousemove", ev => showTip(ev, edgeTip(e))).on("mouseleave", hideTip);
+    drawn.edges.push({ e, el, base }); });
+  if (state.route?.path) { const p = state.route.path;
+    for (let i = 0; i + 1 < p.length; i++) { const a = L.pos.get(p[i]), b = L.pos.get(p[i + 1]);
+      eg.append("line").attr("class", "edge route").attr("x1", a.x + MW / 2).attr("y1", a.y + MH / 2).attr("x2", b.x + MW / 2).attr("y2", b.y + MH / 2); } }
+  L.pos.forEach((p, id) => {
+    const n = byId.get(id);
+    const dim = (words.length && !matches(id)) || (state.route && !routeTables.has(id));
+    const g = ng.append("g").attr("class", "node" + (dim ? " faded" : "")).attr("transform", `translate(${p.x},${p.y})`).style("cursor", "pointer");
+    g.append("rect").attr("width", MW).attr("height", MH).attr("rx", 6).style("fill", "#fff");
+    g.append("rect").attr("class", "box").attr("width", MW).attr("height", MH).attr("rx", 6).style("fill", fillFor(n, state.mapColor))
+      .style("stroke-width", routeTables.has(id) ? 3 : null).style("stroke", routeTables.has(id) ? "#fb8500" : null);
+    g.append("text").attr("x", 8).attr("y", 12).style("font-weight", 600).text(trunc(n.name, 22) + (n.tags.certified ? " ✓" : ""));
+    g.append("text").attr("x", 8).attr("y", 26).style("font-size", "10px").style("fill", "#656d76").text(n.grain ? trunc("per " + n.grain, 30) : n.kind === "view" ? "view" : "no grain stated");
+    const bw = dependents(id) ? 4 + 40 * Math.log1p(dependents(id)) / Math.log1p(maxDependents) : 0;
+    g.append("rect").attr("x", MW - 8 - bw).attr("y", 5).attr("width", bw).attr("height", 4).style("fill", "#0969da");
+    g.on("click", ev => { ev.stopPropagation(); state.selected = id; state.panel = null;
+        if (state.route) { state.route = null; return renderMap(); } highlight(id, state.mapHighlight); renderPanel(); })
+     .on("dblclick", ev => { ev.stopPropagation(); focusOn(id); })
+     .on("mouseenter", () => { if (!state.route && !words.length) highlight(id, state.mapHighlight); })
+     .on("mouseleave", () => { hideTip(); if (!state.route && !words.length) highlight(state.selected, state.mapHighlight); })
+     .on("mousemove", ev => showTip(ev, `<b>${esc(id)}</b><br>${esc(n.comment || "")}<br>${dependents(id)} objects downstream${n.tags.certified ? " · certified" : ""}<br><span style="opacity:.7">click to select · double-click to explore</span>`));
+    drawn.nodes.set(id, g);
+  });
+  if (state.selected && !state.route && !words.length) highlight(state.selected, state.mapHighlight);
+  $("#hint").innerHTML = "Regions are schemas · " + (L.bezier ? `${L.crossings} edge crossings · drawn by the build${L.built.tries > 1 ? `, the tidiest of ${L.built.tries} layouts it tried` : ""}` : crossingNote(L));
+  svg.on("click", ev => { if (ev.target !== svg.node()) return;
+    if (state.route) { state.route = null; return renderMap(); }
+    state.selected = null; highlight(null); renderPanel(); });
+  const box = boundsOf(state.route?.path ? state.route.path.map(id => L.pos.get(id)).filter(Boolean)
+    : state.mapSchema ? L.groups.filter(g => g.schema === state.mapSchema) : []);
+  if (box) fit(box.w, box.h, 60, box.x, box.y); else fit(L.width, L.height, 30);
+  renderPanel();
+}
+const boundsOf = rs => { if (!rs.length) return null;
+  const x = Math.min(...rs.map(r => r.x)), y = Math.min(...rs.map(r => r.y));
+  return { x, y, w:Math.max(...rs.map(r => r.x + (r.w ?? MW))) - x, h:Math.max(...rs.map(r => r.y + (r.h ?? MH))) - y }; };
+
+// the overview: a box per schema, an edge per pair of schemas that table edges connect
+function schemaEdges() {
+  const by = new Map();
+  EDGES.forEach(e => { const a = byId.get(e.s), b = byId.get(e.t);
+    if (e.kind === "fk" || !inCatalog(a) || !inCatalog(b) || a.schema === b.schema) return;
+    const k = a.schema + "|" + b.schema;
+    if (!by.has(k)) by.set(k, { id:"S" + by.size, s:a.schema, t:b.schema, kinds:{ flow:0, join:0, runtime:0 }, n:0, kind:"flow" });
+    const x = by.get(k); x.kinds[e.kind]++; x.n++; });
+  by.forEach(x => x.kind = x.kinds.flow ? "flow" : x.kinds.runtime ? "runtime" : "join"); // drawn as its strongest kind
+  return [...by.values()];
+}
+const KIND_TEXT = { flow:"data flow", join:"read only to join or filter", runtime:"seen by the lineage, not in any SQL" };
+const edgeCount = x => `${x.n} table edge${x.n === 1 ? "" : "s"}: ` + Object.entries(x.kinds).filter(([, v]) => v).map(([k, v]) => `${v} ${KIND_TEXT[k]}`).join(", ");
+async function renderSchemas() {
+  const inside = G.schemas.filter(s => !s.outside && G.nodes.some(n => n.schema === s.name && inCatalog(n)));
+  const edges = schemaEdges();
+  const [SW, SH] = PRE?.schemas?.card || [220, 58];
+  const L = PRE?.schemas?.routes ? asBuilt(PRE.schemas, edges) : await layout(inside.map(s => ({ id:s.name, width:SW, height:SH })), edges, { fresh:true, layer:90, gap:30 });
+  const draw = L.bezier ? bezier : curve;
+  lastPos = new Map(); gz.selectAll("*").remove(); hideTip();
+  const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
+  const hitsIn = new Map(); if (words.length) G.nodes.filter(inCatalog).forEach(n => {
+    const t = (n.id + " " + n.comment + " " + n.columns.map(c => c.name + " " + (c.comment || "")).join(" ")).toLowerCase();
+    if (words.every(w => t.includes(w))) hitsIn.set(n.schema, (hitsIn.get(n.schema) || 0) + 1); });
+  const maxN = Math.max(1, ...edges.map(x => x.n)), objs = s => G.nodes.filter(n => n.schema === s && inCatalog(n));
+  const maxObjs = Math.max(1, ...inside.map(s => objs(s.name).length));
+  const eg = gz.append("g"), ng = gz.append("g");
+  drawn = { edges:[], nodes:new Map() };
+  edges.forEach(x => { const pts = L.paths.get(x.id); if (!pts) return;
+    const base = "edge wide " + (x.kind === "flow" ? "" : x.kind) + (words.length && !(hitsIn.has(x.s) && hitsIn.has(x.t)) ? " faded" : "");
+    const el = eg.append("path").attr("class", base).attr("d", draw(pts)).attr("marker-end", markerFor(base)).style("stroke-width", 1 + 4 * Math.log1p(x.n) / Math.log1p(maxN));
+    eg.append("path").attr("class", "edge-hit").attr("d", draw(pts)).on("mousemove", ev => showTip(ev, `<b>${esc(x.s)} → ${esc(x.t)}</b><br>${esc(edgeCount(x))}`)).on("mouseleave", hideTip);
+    drawn.edges.push({ e:x, el, base }); });
+  L.pos.forEach((p, name) => {
+    const meta = G.schemas.find(s => s.name === name) || { name, comment:"", domain:name }, os = objs(name);
+    const views = os.filter(n => n.kind === "view").length, dim = words.length && !hitsIn.has(name);
+    const g = ng.append("g").attr("class", "node" + (dim ? " faded" : "")).attr("transform", `translate(${p.x},${p.y})`).style("cursor", "pointer");
+    g.append("rect").attr("width", SW).attr("height", SH).attr("rx", 8).style("fill", "#fff");
+    g.append("rect").attr("class", "box").attr("width", SW).attr("height", SH).attr("rx", 8).style("fill", schemaColor(name)).style("fill-opacity", .16);
+    g.append("rect").attr("width", 5).attr("height", SH).attr("rx", 2).style("fill", schemaColor(name));
+    g.append("text").attr("x", 14).attr("y", 18).style("font-weight", 600).text(trunc(name, 24));
+    g.append("text").attr("x", 14).attr("y", 33).style("font-size", "10px").style("fill", "#656d76").text(trunc(meta.domain !== name ? meta.domain : meta.comment || "", 34));
+    g.append("text").attr("x", 14).attr("y", 48).style("font-size", "10px").style("fill", "#57606a")
+      .text(`${os.length - views} table${os.length - views === 1 ? "" : "s"}${views ? ` · ${views} view${views === 1 ? "" : "s"}` : ""}${hitsIn.has(name) ? ` · ${hitsIn.get(name)} match` : ""}`);
+    const bw = 4 + 44 * os.length / maxObjs;
+    g.append("rect").attr("x", SW - 10 - bw).attr("y", 8).attr("width", bw).attr("height", 4).style("fill", "#0969da");
+    g.on("click", ev => { ev.stopPropagation(); state.selSchema = name; state.panel = null; highlight(name, state.mapHighlight); renderPanel(); })
+     .on("dblclick", ev => { ev.stopPropagation(); openSchema(name); })
+     .on("mouseenter", () => { if (!words.length) highlight(name, state.mapHighlight); })
+     .on("mouseleave", () => { hideTip(); if (!words.length) highlight(state.selSchema, state.mapHighlight); })
+     .on("mousemove", ev => showTip(ev, `<b>${esc(name)}</b>${meta.comment ? "<br>" + esc(meta.comment) : ""}<br>${os.length} objects<br><span style="opacity:.7">click to select · double-click to open its tables</span>`));
+    drawn.nodes.set(name, g);
+  });
+  if (state.selSchema && !words.length) highlight(state.selSchema, state.mapHighlight);
+  $("#hint").innerHTML = `${inside.length} schemas · ${G.nodes.filter(inCatalog).length} tables and views · the bar is a schema's size, an edge's width the table edges it stands for`
+    + (L.bezier ? ` · ${L.crossings} crossings · drawn by the build` : "");
+  svg.on("click", ev => { if (ev.target !== svg.node()) return; state.selSchema = null; highlight(null); renderPanel(); });
+  fit(L.width, L.height, 40);
+  renderPanel();
+}
+function openSchema(name, table = null) {
+  state.mapLevel = "tables"; state.mapSchema = name; state.selected = table; state.selSchema = null; state.panel = null; renderMap();
+}
+function panelSchema(name) {
+  const meta = G.schemas.find(s => s.name === name) || { name, comment:"", domain:name };
+  const os = G.nodes.filter(n => n.schema === name && inCatalog(n)).sort((a, b) => trust(b) - trust(a));
+  const edges = schemaEdges(), ins = edges.filter(x => x.t === name).sort((a, b) => b.n - a.n), outs = edges.filter(x => x.s === name).sort((a, b) => b.n - a.n);
+  const row = (x, other, arrow) => `<div>${arrow} <a href="#" data-schema="${esc(other)}"><code>${esc(other)}</code></a> <span class="sub">${esc(edgeCount(x))}</span></div>`;
+  const SHOW = 40, opened = state.mapLevel === "tables" && state.mapSchema === name;
+  $("#panel").innerHTML = `<h2>${esc(name)}</h2><div class="sub">schema${meta.domain !== name ? " · " + esc(meta.domain) : ""}${meta.owner ? " · owned by " + esc(meta.owner) : ""}</div>
+    <p>${esc(meta.comment || "")}</p>
+    <p>${opened ? `<button class="btn" id="s-open">Back to the schemas</button>` : `<button class="btn primary" id="s-open">Open its tables</button>`}</p>
+    <h3>Fed by (${ins.length})</h3>${ins.map(x => row(x, x.s, "←")).join("") || `<p class="sub">No other schema.</p>`}
+    <h3>Feeds (${outs.length})</h3>${outs.map(x => row(x, x.t, "→")).join("") || `<p class="sub">No other schema.</p>`}
+    <h3>Tables and views (${os.length})</h3><p class="sub">Certified first, then those the most objects depend on.</p>
+    ${os.slice(0, SHOW).map(n => `<div><a href="#" data-maptable="${esc(n.id)}">${esc(n.name)}</a>${n.tags.certified ? " ✓" : ""} <span class="sub">${n.kind === "view" ? "view · " : ""}${dependents(n.id)} downstream</span></div>`).join("")}
+    ${os.length > SHOW ? `<p class="sub">and ${os.length - SHOW} more: open its tables to see them all.</p>` : ""}`;
+  $("#s-open").onclick = () => { if (!opened) return openSchema(name); state.mapLevel = "schemas"; state.selSchema = name; renderMap(); };
+  $("#panel").querySelectorAll("[data-maptable]").forEach(a => a.onclick = ev => { ev.preventDefault(); openSchema(name, a.dataset.maptable); });
+  $("#panel").querySelectorAll("[data-schema]").forEach(a => a.onclick = ev => { ev.preventDefault();
+    if (state.mapLevel === "tables") return openSchema(a.dataset.schema);
+    state.selSchema = a.dataset.schema; highlight(state.selSchema, state.mapHighlight); renderPanel(); });
+}
+function findRoute(from, to) { // the join graph: declared keys, joins in jobs and views, joins analysts run
+  const adj = new Map();
+  G.joins.forEach(j => { const a = tableOf(j.a), b = tableOf(j.b); if (a === b) return;
+    const w = 1 + 2 / (1 + (j.declared ? 3 : 0) + j.code.length);
+    push(adj, a, { to:b, w, j, here:j.a, there:j.b }); push(adj, b, { to:a, w, j, here:j.b, there:j.a }); });
+  const dist = new Map([[from, 0]]), prev = new Map(), todo = new Set([from]);
+  while (todo.size) {
+    const u = [...todo].reduce((x, y) => dist.get(x) <= dist.get(y) ? x : y); todo.delete(u); if (u === to) break;
+    for (const e of adj.get(u) || []) { const d = dist.get(u) + e.w; if (d < (dist.get(e.to) ?? Infinity)) { dist.set(e.to, d); prev.set(e.to, { from:u, e }); todo.add(e.to); } }
+  }
+  if (!prev.has(to) && from !== to) return { path:null, hops:[] };
+  const hops = []; let x = to;
+  while (x !== from) { const p = prev.get(x); hops.unshift({ a:p.from, b:x, on:[p.e.here, p.e.there], j:p.e.j }); x = p.from; }
+  return { path:[from, ...hops.map(h => h.b)], hops };
+}
+function cardinality(h) { // from the keys: does this join multiply rows?
+  const isKey = cid => { const n = byId.get(tableOf(cid)); return n.pk.length === 1 && n.pk[0] === colName(cid); };
+  const [a, b] = h.on;
+  if (isKey(b) && isKey(a)) return ["one to one", ""];
+  if (isKey(b)) return ["many to one", ""];
+  if (isKey(a)) return ["one to many", `rows multiply: each row of ${h.a} meets many of ${h.b}`];
+  return ["many to many", "neither side is a key, so rows can multiply"];
+}
+function panelRoute() {
+  const r = state.route;
+  if (!r.path) { $("#panel").innerHTML = `<h2>No route</h2><p>No join path from ${esc(r.from)} to ${esc(r.to)} through declared keys or the joins in the SQL read here.</p>`; return; }
+  const alias = new Map(r.path.map((t, i) => [t, (byId.get(t).name.match(/[a-z]/g) || ["t"])[0] + (i + 1)]));
+  const col = cid => `${alias.get(tableOf(cid))}.${colName(cid)}`;
+  const sql = `SELECT …\nFROM ${r.path[0]} AS ${alias.get(r.path[0])}\n` + r.hops.map(h => `JOIN ${h.b} AS ${alias.get(h.b)} ON ${col(h.on[1])} = ${col(h.on[0])}`).join("\n");
+  $("#panel").innerHTML = `<h2>${esc(r.from)} → ${esc(r.to)}</h2><p class="sub">${r.hops.length} join${r.hops.length === 1 ? "" : "s"}, preferring declared keys and the joins the SQL already makes.</p>
+    ${r.hops.map(h => { const [card, warn] = cardinality(h), j = h.j;
+      return `<div class="hop"><code>${esc(short(h.on[0]))}</code> = <code>${esc(short(h.on[1]))}</code><br>
+        <span class="sub">${[j.declared ? "declared key " + esc(j.declared) : "", j.code.length ? "joined in " + j.code.map(viaText).join(", ") : ""].filter(Boolean).join(" · ")}</span><br>
+        <b>${card}</b>${warn ? ` <span class="status stale">${esc(warn)}</span>` : ""}</div>`; }).join("")}
+    <h3>A starting point</h3><pre>${esc(sql)}</pre>`;
+}
+const trust = n => (n.tags.certified ? 1000 : 0) + dependents(n.id);
+function panelCompass() {
+  const q = state.query && search(state.query);
+  const cands = q ? [...new Set(q.map(h => h.kind === "column" ? tableOf(h.id) : h.id))].map(id => byId.get(id)).filter(n => n.kind !== "files")
+    .sort((a, b) => trust(b) - trust(a)) : null;
+  const card = n => `<div class="card" style="margin:8px 0;border-top-color:${schemaColor(n.schema)}"><div class="t"><a href="#" data-goto="${esc(n.id)}">${esc(n.id)}</a> ${n.tags.certified ? '<span class="chip cert">certified</span>' : ""}</div>
+    <div class="sub">${esc(n.comment)}</div><dl><dt>grain</dt><dd>${n.grain ? "one row per " + esc(n.grain) : "not stated"}</dd><dt>downstream</dt><dd>${dependents(n.id)} objects</dd>
+    <dt>last written</dt><dd>${written(n)}</dd><dt>owner</dt><dd>${esc(n.owner || "—")}</dd></dl></div>`;
+  $("#panel").innerHTML = cands ? `<h2>Tables for “${esc(state.query)}”</h2><p class="sub">Certified first, then those the most objects depend on. Check the grain before you pick.</p>${cands.map(card).join("") || "<p>Nothing matches.</p>"}`
+    : `<h2>Compass</h2><p>Search for business words (<i>revenue</i>, <i>refund</i>, <i>campaign</i>) and the map lights up where they live, with the most trusted tables listed here.</p>
+      <h3>Where to start, by domain</h3>${G.schemas.filter(s => !s.outside && s.name !== "(files)").map(s => { const top = G.nodes.filter(n => n.schema === s.name).sort((a, b) => trust(b) - trust(a)).slice(0, 2);
+        return `<div style="margin:6px 0"><span class="chip" style="border-color:${schemaColor(s.name)}">${esc(s.name)}</span> <span class="sub">${esc(s.comment)}</span><br>${top.map(n => `<a href="#" data-goto="${esc(n.id)}">${esc(n.name)}</a>${n.tags.certified ? " ✓" : ""} <span class="sub">${dependents(n.id)} downstream</span>`).join(" · ")}</div>`; }).join("")}`;
+  wirePanel();
+}
+
+// ---------------------------------------------------------------- compare
+const family = t => /int|decimal|double|float|long|bigint/.test(t) ? "num" : /date|timestamp/.test(t) ? "time" : "text";
+const tokens = s => new Set(s.toLowerCase().split(/_/).filter(Boolean));
+const jac = (a, b) => { if (!a.size && !b.size) return 0; let i = 0; a.forEach(x => b.has(x) && i++); return i / (a.size + b.size - i); };
+const stripAgg = e => { const m = /^(SUM|COUNT|AVG|MIN|MAX)\((.*)\)$/i.exec(e); return m ? m[2] : e; };
+function exprKey(cid) { // what a column computes, ignoring aliases and a final aggregate
+  const ne = nearestExpr(cid); if (!ne) return "(copied)";
+  return ne.exprs.map(e => stripAgg(e).replace(/\b[a-z_]\w*\./gi, "")).map(e => /^\w+$/.test(e) ? "(copied)" : e).sort().join(" | ");
+}
+function align(tables) {
+  const cols = tables.map(t => byId.get(t).columns.map(c => ({ t, c, cid:`${t}.${c.name}`, roots:roots(`${t}.${c.name}`) })));
+  const ufc = new Map(), f = x => { while (ufc.has(x) && ufc.get(x) !== x) x = ufc.get(x); return x; };
+  for (let i = 0; i < cols.length; i++) for (let j = i + 1; j < cols.length; j++) {
+    const pairs = [];
+    cols[i].forEach(a => cols[j].forEach(b => {
+      const s = (0.7 * jac(a.roots, b.roots) + 0.3 * (a.c.name === b.c.name ? 1 : jac(tokens(a.c.name), tokens(b.c.name)))) * (family(a.c.type) === family(b.c.type) ? 1 : 0.4);
+      if (s >= 0.3) pairs.push([s, a.cid, b.cid]); }));
+    pairs.sort((x, y) => y[0] - x[0]); const usedA = new Set(), usedB = new Set();
+    pairs.forEach(([, a, b]) => { if (usedA.has(a) || usedB.has(b)) return; usedA.add(a); usedB.add(b); const ra = f(a), rb = f(b); if (ra !== rb) ufc.set(ra, rb); });
+  }
+  const groups = new Map();
+  cols.flat().forEach(x => { const r = f(x.cid); if (!groups.has(r)) groups.set(r, {}); const g = groups.get(r); if (!g[x.t]) g[x.t] = x; });
+  return [...groups.values()].map(g => {
+    const members = Object.values(g), names = members.map(m => m.c.name);
+    const name = names.sort((a, b) => names.filter(x => x === b).length - names.filter(x => x === a).length)[0];
+    const exprs = members.map(m => exprKey(m.cid)), raw = members.map(m => JSON.stringify(nearestExpr(m.cid)?.exprs || []));
+    return { name, g, isKey:members.some(m => byId.get(m.t).pk.includes(m.c.name)), width:members.length,
+      differs:members.length > 1 && new Set(exprs).size > 1, summed:members.length > 1 && new Set(exprs).size === 1 && new Set(raw).size > 1 };
+  }).sort((a, b) => (b.isKey - a.isKey) || (b.width - a.width) || a.name.localeCompare(b.name));
+}
+function findings(tables, rows) {
+  const out = [], ns = tables.map(t => byId.get(t));
+  if (new Set(ns.map(n => n.grain)).size > 1) out.push(["warn", `<b>Different grains.</b> ${ns.map(n => `${esc(n.name)}: one row per ${esc(n.grain || "?")}`).join("; ")}. Compare them only at a grain they can all reach.`]);
+  tables.forEach(t => { const fs = filtersUpstream(t); if (fs.length) out.push(["warn", `<b>${esc(t)}</b> only sees rows where ${fs.map(f => `<code>${esc(f.filter)}</code>${f.own ? "" : ` <span class="sub">(at ${esc(f.table)})</span>`}`).join(" and ")}.`]); });
+  // where each one's data starts: the objects upstream of it that nothing feeds
+  const origins = tables.map(t => new Set([...closure(t, up, "s").keys()].filter(x => x !== t && !(up.get(x) || []).length)));
+  const shared = [...origins[0]].filter(x => origins.every(o => o.has(x)));
+  out.push(["", `<b>Sources.</b> ${shared.length ? `All of them start from ${shared.map(link).join(", ")}.` : "They start from no source in common."} ${tables.map((t, i) => { const only = [...origins[i]].filter(x => !origins.every(o => o.has(x))); return only.length ? `${esc(byId.get(t).name)} also starts from ${only.map(link).join(", ")}.` : ""; }).join(" ")}`]);
+  rows.filter(r => r.differs && !r.isKey && Object.values(r.g).every(m => family(m.c.type) === "num")).forEach(r =>
+    out.push(["bad", `<b>${esc(r.name)}</b> is computed ${Object.keys(r.g).length} different ways: ${Object.values(r.g).map(m => `${esc(m.t.split(".")[1])}.${esc(m.c.name)} = <code>${esc((nearestExpr(m.cid)?.exprs || ["(copied)"]).join(" | "))}</code>`).join("; ")}.`]));
+  rows.filter(r => r.summed && Object.values(r.g).every(m => family(m.c.type) === "num")).forEach(r =>
+    out.push(["", `<b>${esc(r.name)}</b> is the same value, summed to a coarser grain: ${Object.values(r.g).map(m => `${esc(m.t.split(".")[1])}.${esc(m.c.name)}`).join(", ")}.`]));
+  rows.filter(r => r.isKey && r.differs && Object.values(r.g).every(m => family(m.c.type) !== "time")).forEach(r =>
+    out.push(["", `<b>Same ids, written differently:</b> ${Object.values(r.g).map(m => `${esc(m.c.name)} = <code>${esc((nearestExpr(m.cid)?.exprs || ["(copied)"]).join(" | "))}</code>`).join(" vs ")}. Matching rows means normalizing the ids first.`]));
+  if (G.meta.lineage && new Set(ns.map(age)).size > 1) out.push(["warn", `<b>Last written:</b> ${ns.map(n => `${esc(n.name)} ${n.kind === "table" ? (n.written ? when(n.written) : "not in the lineage") : "(a view)"}`).join("; ")}.`]);
+  return out;
+}
+// an id built as CONCAT('<prefix>', <source id>), rebuilt as <source schema>:<id>, so tables that prefix
+// the same ids differently can be matched, and id 123 from one source never meets id 123 from another
+function keyNormalizer(cid, al) {
+  const c = `${al}.${colName(cid)}`, hops = derivation(cid), first = hops.find(h => h.steps.length)?.depth;
+  if (first == null) return c;
+  const parts = [];
+  hops.filter(h => h.depth === first && h.steps.length).forEach(h => {
+    const m = h.steps.map(s => /CONCAT\('([^']*)'/i.exec(s)).find(Boolean); if (!m) return;
+    const src = [...roots(h.s)].map(r => byId.get(tableOf(r))?.schema).find(Boolean) || tableOf(h.s).split(".")[0];
+    if (!parts.some(p => p[0] === m[1])) parts.push([m[1], src]);
+  });
+  if (!parts.length) return c;
+  return `CASE ${parts.map(([p, s]) => `WHEN startswith(${c}, '${p}') THEN '${s}'`).join(" ")} END\n    || ':' || regexp_extract(${c}, '([0-9]+)$', 1)`;
+}
+const fq = t => inCatalog(byId.get(t)) ? `${G.meta.catalog}.${t}` : t; // the name to run SQL with
+function checksSql(tables, rows) {
+  const out = [];
+  tables.forEach(t => { const n = byId.get(t); if (!n.columns.length) return;
+    out.push({ title:n.pk.length ? `Is the grain of ${t} real? Keys are declared, not enforced.` : `${t} declares no key: does ${n.columns[0].name} repeat?`, kind:"grain", t,
+      sql:`SELECT count(*) AS rows, count(DISTINCT ${(n.pk.length ? n.pk : [n.columns[0].name]).join(", ")}) AS keys\nFROM ${fq(t)}` }); });
+  for (let i = 0; i < tables.length; i++) for (let j = i + 1; j < tables.length; j++) {
+    const a = tables[i], b = tables[j];
+    const keyRow = rows.find(r => r.isKey && r.g[a] && r.g[b] && byId.get(a).pk.includes(r.g[a].c.name) && byId.get(b).pk.includes(r.g[b].c.name));
+    if (!keyRow) continue;
+    const measure = rows.find(r => !r.isKey && r.g[a] && r.g[b] && family(r.g[a].c.type) === "num" && r.differs);
+    const side = (t, al, m) => `SELECT ${keyNormalizer(m.cid, al)} AS id${measure ? `, sum(${al}.${measure.g[t].c.name}) AS m` : ""}\n  FROM ${fq(t)} AS ${al} GROUP BY 1`;
+    out.push({ title:`Do ${a} and ${b} hold the same ${keyRow.name.replace(/_(key|ref|id)$/, "")}s?`, kind:"overlap", pair:[a, b],
+      sql:`WITH a AS (\n  ${side(a, "a", keyRow.g[a])}\n), b AS (\n  ${side(b, "b", keyRow.g[b])}\n)\nSELECT count_if(a.id IS NOT NULL AND b.id IS NOT NULL) AS both,\n  count_if(b.id IS NULL) AS only_a, count_if(a.id IS NULL) AS only_b${measure ? `,\n  avg(CASE WHEN abs(a.m - b.m) <= 0.01 * abs(b.m) THEN 1 ELSE 0 END) AS agree_within_1p` : ""}\nFROM a FULL OUTER JOIN b ON a.id = b.id` });
+  }
+  return out;
+}
+async function renderCompare() {
+  const tables = state.compare.filter(t => byId.has(t)), page = $("#page");
+  if (tables.length < 2) { page.innerHTML = `<h2>Compare tables</h2><p>Add two or more tables with the search box. ${tables.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</p>`; return; }
+  const rows = align(tables), fs = findings(tables, rows), checks = checksSql(tables, rows), cc = t => PALETTE[tables.indexOf(t) % PALETTE.length];
+  page.innerHTML = `<h2>Compare ${tables.length} tables <span class="sub" style="font-size:13px;font-weight:normal">· add more with the search box</span></h2>
+    <div class="cards">${tables.map(t => { const n = byId.get(t);
+      return `<div class="card" style="border-top-color:${cc(t)}"><div class="t">${esc(t)} <a href="#" data-rm="${esc(t)}" title="remove" style="float:right;text-decoration:none">×</a></div><div class="sub">${esc(n.comment)}</div><dl>
+        <dt>grain</dt><dd>${n.grain ? "one row per " + esc(n.grain) : "<b>not stated</b>"}</dd><dt>key</dt><dd>${n.pk.length ? esc(n.pk.join(", ")) : "<b>none declared</b>"}</dd>
+        <dt>written by</dt><dd>${n.writers.map(w => viaText(w.via)).join(", ") || "—"}</dd><dt>last written</dt><dd>${written(n)}</dd>
+        <dt>downstream</dt><dd>${dependents(t)} objects</dd><dt>status</dt><dd>${n.tags.certified ? '<span class="chip cert">certified</span>' : "not certified"}${n.owner ? " · " + esc(n.owner) : ""}</dd></dl></div>`; }).join("")}</div>
+    <h3>What's different</h3>${fs.map(([k, h]) => `<div class="finding ${k}">${h}</div>`).join("")}
+    <h3>Columns, lined up by where their values come from</h3>
+    <p class="sub">Columns share a row when their values trace back to the same source columns (declared keys count as the same values), or failing that, similar names. A marked row is computed differently in different tables. Click a cell to trace it.</p>
+    <table class="grid"><tr><th>concept</th>${tables.map(t => `<th style="border-top:3px solid ${cc(t)}">${esc(t)}</th>`).join("")}</tr>
+    ${rows.map(r => `<tr class="${r.differs ? "differs" : ""}"><td class="concept"><b>${esc(r.name)}</b>${r.isKey ? ' <span class="chip">key</span>' : ""}</td>${tables.map(t => { const m = r.g[t]; if (!m) return `<td class="empty"></td>`;
+      const ne = nearestExpr(m.cid); return `<td data-cell="${esc(m.cid)}" style="cursor:pointer"><span class="cell-name">${esc(m.c.name)}</span><span class="cell-type">${esc(m.c.type)}</span>${ne ? ne.exprs.map(e => `<span class="cell-expr">${esc(e)}</span>`).join("") + `<span class="cell-via">${esc(ne.via.join(", "))}</span>` : `<span class="cell-via">copied from upstream</span>`}</td>`; }).join("")}</tr>`).join("")}</table>
+    <h3>Shared ancestry</h3><p class="sub">Everything upstream of the compared tables. The colored squares on each box show which compared tables it feeds: a box with every color is a shared source. Hover a box to see its edges.</p>
+    <div id="ancestry"><svg><g id="anc"></g></svg></div><div class="sub" id="anc-note" style="margin-top:4px"></div>
+    <h3>Checks to run on a warehouse</h3><p class="sub">Written from what the lineage says about keys and measures. ucatlas doesn't run them: copy one into a SQL editor.</p>
+    <div class="two">${checks.map((c, i) => `<div class="card" style="border-top-color:#8c959f"><div class="t">${esc(c.title)}</div><pre>${esc(c.sql)}</pre>
+      <button class="btn" data-copy="${i}">Copy the SQL</button></div>`).join("") || `<p class="sub">None: the tables share no declared key.</p>`}</div>
+    <h3>What reads each</h3><div class="cards">${tables.map(t => { const d = closure(t, down, "t"); d.delete(t);
+      return `<div class="card" style="border-top-color:${cc(t)}"><div class="t">${esc(t)}</div><p>${d.size} objects downstream</p>${[...d.keys()].map(x => `<div>→ ${link(x)}</div>`).join("")}</div>`; }).join("")}</div>`;
+  page.querySelectorAll("[data-rm]").forEach(a => a.onclick = ev => { ev.preventDefault(); state.compare = state.compare.filter(t => t !== a.dataset.rm); render(); });
+  page.querySelectorAll("[data-goto]").forEach(a => a.onclick = ev => { ev.preventDefault(); focusOn(a.dataset.goto); });
+  page.querySelectorAll("[data-cell]").forEach(td => td.onclick = () => focusOn(tableOf(td.dataset.cell), td.dataset.cell));
+  page.querySelectorAll("[data-copy]").forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(checks[+b.dataset.copy].sql); b.textContent = "Copied"; } catch { b.textContent = "Select the SQL above to copy it"; } });
+  const feeds = new Map(); tables.forEach(t => closure(t, up, "s").forEach((d, x) => push(feeds, x, t)));
+  const ids = [...feeds.keys()], edges = EDGES.filter(e => e.kind !== "fk" && feeds.has(e.s) && feeds.has(e.t)), AW = 200, AH = 30;
+  const L = await layout(ids.map(id => ({ id, width:AW, height:AH })), edges, { layer:60, gap:12 });
+  $("#anc-note").textContent = crossingNote(L);
+  const box = d3.select("#anc"), asvg = d3.select("#ancestry svg"), els = [];
+  edges.forEach(e => { const pts = L.paths.get(e.id); if (!pts) return; const base = edgeClass(e);
+    els.push({ e, base, el:box.append("path").attr("class", base).attr("d", curve(pts)).attr("marker-end", markerFor(base)) }); });
+  L.pos.forEach((p, id) => {
+    const n = byId.get(id), fed = feeds.get(id), mine = tables.includes(id);
+    const g = box.append("g").attr("class", "node").attr("transform", `translate(${p.x},${p.y})`);
+    g.append("rect").attr("class", "box").attr("width", AW).attr("height", AH).attr("rx", 5).style("stroke", mine ? cc(id) : null).style("stroke-width", mine ? 3 : null).style("fill", fed.length === tables.length && !mine ? "#fff8c5" : "#fff");
+    g.append("rect").attr("width", 5).attr("height", AH).style("fill", schemaColor(n.schema));
+    g.append("text").attr("x", 10).attr("y", AH / 2).text(trunc(short(id), 24));
+    tables.forEach((t, i) => { if (fed.includes(t)) g.append("rect").attr("x", AW - 8 - (tables.length - i) * 9).attr("y", AH - 9).attr("width", 7).attr("height", 5).style("fill", cc(t)); });
+    g.on("mouseenter", () => els.forEach(({ e, el, base }) => { const c = e.t === id ? base + " hl-up" : e.s === id ? base + " hl-down" : base + " faded"; el.attr("class", c).attr("marker-end", markerFor(c)); }))
+     .on("mousemove", ev => showTip(ev, `<b>${esc(short(id))}</b><br>feeds ${fed.map(esc).join(", ")}`))
+     .on("mouseleave", () => { hideTip(); els.forEach(({ el, base }) => el.attr("class", base).attr("marker-end", markerFor(base))); });
+  });
+  const r = $("#ancestry").getBoundingClientRect(), k = Math.min(1, (r.width - 20) / L.width, (r.height - 20) / L.height);
+  const az = d3.zoom().scaleExtent([.2, 2]).on("zoom", e => box.attr("transform", e.transform));
+  asvg.call(az).call(az.transform, d3.zoomIdentity.translate((r.width - L.width * k) / 2, (r.height - L.height * k) / 2).scale(k));
+}
+
+addEventListener("resize", () => { if (state.mode !== "compare") render(); });
+if (G.nodes.length) render();
+else $("#stage").innerHTML = `<p style="padding:20px">The snapshot has no tables or views.</p>`;
+</script>
+</body>
+</html>

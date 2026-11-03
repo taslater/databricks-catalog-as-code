@@ -3,6 +3,32 @@
 All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.1.0a2
+
+### ucatlas
+
+- `explore` writes one interactive page for a whole snapshot, with no
+  workspace or warehouse. Column lineage comes from the views' definitions
+  and from SQL files given with `--sql`, read with sqlglot, and from the
+  lineage the snapshot recorded; each edge says which. Explore follows an
+  object's lineage, down to how each column is computed. Compare lines up
+  tables' columns by where their values come from, and writes the SQL
+  checks that would confirm them. Map shows the catalog by schema or by
+  table, finds how to join two tables, and lights up tables by search.
+- Statements that write an object but that sqlglot can't read are listed as
+  lineage gaps, and their targets marked.
+- The layouts are worked out with Graphviz when the page is built, so a view
+  keeps its objects in place as it changes, and the same snapshot always
+  builds the same page.
+- The explorer's page comes with the libraries it draws with, d3 7.9.0 and
+  elkjs 0.9.3, so it works without internet access. Their licenses are in
+  `THIRD-PARTY-NOTICES.txt`, which is written beside the page.
+- Depends on sqlglot directly.
+
+### ucmodel and ucstate
+
+- No changes. Released again so that the three packages keep one version.
+
 ## 0.1.0a1
 
 The first release, an alpha. It has been tested only on Databricks Free

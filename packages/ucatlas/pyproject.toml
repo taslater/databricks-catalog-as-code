@@ -1,11 +1,12 @@
 [project]
 name = "ucatlas"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "ER diagrams and lineage graphs of a Unity Catalog, as a static site"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
-license-files = ["LICENSE"]
+# The explorer ships d3 (ISC) and elkjs (EPL-2.0, with a shim under Apache-2.0), unmodified.
+license = "MIT AND ISC AND EPL-2.0 AND Apache-2.0"
+license-files = ["LICENSE", "src/ucatlas/explorer/THIRD-PARTY-NOTICES.txt"]
 authors = [{ name = "Thomas Slater" }]
 keywords = ["databricks", "unity-catalog", "sql", "ddl", "schema-migration"]
 classifiers = [
@@ -19,9 +20,10 @@ classifiers = [
     "Topic :: Database",
     "Typing :: Typed",
 ]
-# It also needs Graphviz's `dot` on the PATH.
+# It also needs Graphviz's `dot` on the PATH. The explorer reads SQL with sqlglot directly.
 dependencies = [
     "ucmodel>=0.1.0a1,<0.2",
+    "sqlglot>=30.27,<31",
 ]
 
 [project.urls]

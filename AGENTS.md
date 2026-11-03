@@ -10,14 +10,14 @@ Three Python packages in one uv workspace, under `packages/`:
 | --- | --- |
 | `ucmodel` | Reads a Unity Catalog over REST into a normalised model, compiles source DDL into the same model, and compares two models. Takes snapshots and reports on them (`ucmodel` command). No warehouse needed |
 | `ucstate` | Plans and applies the changes that bring a catalog to its SQL source files (`ucstate` command) |
-| `ucatlas` | Draws a catalog or a snapshot as a static site of ER diagrams and lineage graphs, and serves a local UI over the commands (`ucatlas` command). Needs Graphviz |
+| `ucatlas` | Draws a catalog or a snapshot as a static site of ER diagrams and lineage graphs, writes an interactive explorer of a snapshot, and serves a local UI over the commands (`ucatlas` command). Needs Graphviz |
 
 `ucstate` and `ucatlas` depend on `ucmodel` and not on each other. The UI
 (`ucatlas serve`) runs `ucstate` as a subprocess when it is installed, and
 never imports it. The README's first sections give the model the tools
 follow: the spec, snapshots and reports, each with one writer. The design
-is in `docs/design.md`, the offline compiler in `docs/offline.md`, and the
-diagrams in `docs/diagrams.md`.
+is in `docs/design.md`, the offline compiler in `docs/offline.md`, the
+diagrams in `docs/diagrams.md`, and the explorer in `docs/explorer.md`.
 
 ## Layout
 
@@ -27,7 +27,9 @@ packages/ucmodel/src/ucmodel/    workspace, reader, normalise, model, compiler, 
 packages/ucstate/src/ucstate/    project, intent, choices, render, shadow, plan, state, apply, cli
 packages/ucstate/scenarios/      the planner's test corpus (before/, after/, expect.yml, recorded.json)
 packages/ucstate/examples/       what `ucstate import` writes for ucmodel's samples
-packages/ucatlas/src/ucatlas/    diagram, serve, cli
+packages/ucatlas/src/ucatlas/    diagram, serve, sqllineage, explore, layout, explorer/, cli
+packages/ucatlas/src/ucatlas/explorer/  the page, and d3 and elkjs, vendored unmodified
+packages/ucatlas/tests/atlas_demo/  a synthetic catalog, its SQL and lineage, for the explorer
 catalog/                         the sample project the workflows deploy (synthetic)
 probes/                          scripts that check what a workspace supports
 scripts/setup_workspace.py       creates the catalogs and CI principal a deploy needs but doesn't create

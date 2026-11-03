@@ -1,6 +1,6 @@
 [project]
 name = "ucmodel"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "A Unity Catalog read over REST into a normalised model, and models compared"
 readme = "README.md"
 requires-python = ">=3.11"
