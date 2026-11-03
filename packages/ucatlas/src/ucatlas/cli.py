@@ -13,6 +13,7 @@ from ucmodel.snapshot import SnapshotError, load, within
 from ucmodel.workspace import NoCredentials, Workspace
 
 from .diagram import DiagramError, write_site
+from .layout import LayoutError
 
 
 class NotThere(Exception):
@@ -38,6 +39,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-lineage", action="store_true",
                    help="skip lineage, which takes one API call per column")
 
+    p = sub.add_parser("explore", help="write an interactive explorer of a snapshot: lineage, "
+                                       "keys and structure across every schema")
+    p.add_argument("--snapshot", type=Path, required=True,
+                   help="a snapshot that `ucmodel snapshot` wrote. No workspace is read")
+    p.add_argument("--sql", type=Path, action="append", default=[],
+                   help="a SQL file, or a folder of them, whose statements write tables "
+                        "(INSERT, MERGE, CREATE TABLE ... AS). Give it once for each")
+    p.add_argument("-o", "--out", type=Path, default=Path("explorer"),
+                   help="the folder to write the explorer to (default: explorer)")
+    p.add_argument("--tries", type=int,
+                   help="layouts tried per arrangement (default: by the catalog's size)")
+
     p = sub.add_parser("serve", help="a local UI for the snapshot, diff, draw and plan commands")
     p.add_argument("--snapshots", type=Path, default=Path("snapshots"),
                    help="the folder of snapshots (default: snapshots)")
@@ -53,10 +66,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "serve":
             from .serve import serve
             return serve(args.snapshots, args.project, args.port, args.work)
+        if args.command == "explore":
+            return cmd_explore(args)
         if args.snapshot:
             return draw_snapshot(args)
         return cmd_draw(Workspace.connect(args.profile), args)
-    except (NoCredentials, NotThere, DiagramError, SnapshotError) as e:
+    except (NoCredentials, NotThere, DiagramError, SnapshotError, LayoutError, OSError) as e:
         print(f"ucatlas: {e}", file=sys.stderr)
         return 2
 
@@ -70,6 +85,27 @@ def cmd_draw(ws: Workspace, args: argparse.Namespace) -> int:
     model = normalise(raw)
     found = None if args.no_lineage else lineage.read(ws, args.catalog, model)
     return _write(model, args.catalog, args.out, datetime.now(UTC), found)
+
+
+def cmd_explore(args: argparse.Namespace) -> int:
+    from . import explore
+
+    s = load(args.snapshot)
+    if missing := [str(p) for p in args.sql if not p.exists()]:
+        raise NotThere(f"no such file or folder: {', '.join(missing)}")
+    files = explore.sql_files(args.sql)
+    g = explore.graph(s.model, s.catalog, s.taken_at, s.lineage, files, snapshot=s.hash[:12])
+    page = explore.write(g, args.out, tries=args.tries)
+    c = explore.counts(g)
+    gaps = f"; {c['gaps']} statement{'s' if c['gaps'] != 1 else ''} with lineage gaps" \
+        if c["gaps"] else ""
+    print(f"wrote {page}: {c.get('table', 0)} tables, {c.get('view', 0)} views, "
+          f"{c['column edges']} column edges{gaps}. To look at it:\n"
+          f"  python3 -m http.server --bind 127.0.0.1 --directory {args.out} 8000")
+    if not s.lineage:
+        print("The snapshot has no lineage, so edges come from SQL only: take one without "
+              "--no-lineage to add what ran.")
+    return 0
 
 
 def draw_snapshot(args: argparse.Namespace) -> int:

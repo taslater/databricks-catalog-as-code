@@ -6,7 +6,8 @@ Draws a Databricks Unity Catalog, or a snapshot of one, as a static site: an
 ER diagram and a lineage graph for each schema, and a list of its objects
 with their columns, keys, comments and column lineage. It reads the catalog
 with `ucmodel` and the lineage API, over REST, so it needs no SQL warehouse.
-It also serves a local UI over the commands.
+It also writes an interactive explorer of a snapshot, and serves a local UI
+over the commands.
 
 ```bash
 uv run ucatlas --profile my-profile draw --catalog my_prod --schema shop -o site
@@ -18,6 +19,22 @@ python3 -m http.server --bind 127.0.0.1 --directory site 8000   # then open loca
 and no credentials. Without `--schema` it draws every schema but
 `information_schema`, or every schema in the snapshot. `--no-lineage` skips
 column lineage, which takes one API call per column.
+
+## The explorer
+
+```bash
+uv run ucatlas explore --snapshot snapshots/my_dev-20261101T120000Z-3f2a9c01b7de.json --sql jobs/ -o explorer
+python3 -m http.server --bind 127.0.0.1 --directory explorer 8000
+```
+
+One interactive page for a whole snapshot: which objects feed which, how
+each column is computed, and how tables join. Explore follows an object's
+lineage, Compare lines up tables' columns by where their values come from,
+and Map shows the catalog by schema or by table. `--sql` adds the lineage
+of the SQL files that load the catalog. It reads no workspace and no
+warehouse. The page holds what the snapshot holds, owners' names included.
+It comes with the two libraries it draws with, d3 and elkjs, so it works
+without internet access. The guide is the repo's [`docs/explorer.md`](https://github.com/taslater/databricks-catalog-as-code/blob/main/docs/explorer.md).
 
 ## The local UI
 
@@ -40,5 +57,5 @@ only reads. The `ucstate` commands write one entry or one script into the
 project, for review in git. Drawings and previews are kept in `.ucatlas/`,
 by snapshot hash.
 
-It needs Graphviz's `dot` on the PATH: `brew install graphviz`, or
+It needs Graphviz on the PATH (`dot`, and `neato` for the explorer): `brew install graphviz`, or
 `apt-get install graphviz`. The plan is the repo's [`docs/diagrams.md`](https://github.com/taslater/databricks-catalog-as-code/blob/main/docs/diagrams.md).

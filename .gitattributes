@@ -1,0 +1,2 @@
+# d3 and elkjs, copied unmodified from npm (see THIRD-PARTY-NOTICES.txt)
+packages/ucatlas/src/ucatlas/explorer/*.js linguist-vendored -diff

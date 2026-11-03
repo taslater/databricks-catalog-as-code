@@ -1,0 +1,236 @@
+{
+ "tables": [
+  [
+   "core.customers",
+   "core.orders",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "core.customers",
+   "marketing.campaign_attribution",
+   "2026-10-05 05:00:00.0"
+  ],
+  [
+   "core.customers",
+   "marketing.customer_360",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "core.customers",
+   "marketing.customer_list",
+   "2026-11-02 06:10:00.0"
+  ],
+  [
+   "core.order_lines",
+   "sales.daily_sales",
+   "2026-11-03 03:30:00.0"
+  ],
+  [
+   "core.order_lines",
+   "sales.order_facts",
+   "2026-11-03 03:30:00.0"
+  ],
+  [
+   "core.orders",
+   "marketing.campaign_attribution",
+   "2026-10-05 05:00:00.0"
+  ],
+  [
+   "core.orders",
+   "sales.daily_sales",
+   "2026-11-03 03:30:00.0"
+  ],
+  [
+   "core.orders",
+   "sales.order_facts",
+   "2026-11-03 03:30:00.0"
+  ],
+  [
+   "files:/Volumes/landing/crm/contacts/",
+   "raw_crm.contacts",
+   "2026-11-03 02:30:00.0"
+  ],
+  [
+   "files:/Volumes/landing/pos/lines/",
+   "raw_pos.transaction_lines",
+   "2026-11-03 02:00:00.0"
+  ],
+  [
+   "files:/Volumes/landing/pos/refunds/",
+   "raw_pos.refunds",
+   "2026-11-03 02:00:00.0"
+  ],
+  [
+   "files:/Volumes/landing/pos/transactions/",
+   "raw_pos.transactions",
+   "2026-11-03 02:00:00.0"
+  ],
+  [
+   "files:/Volumes/landing/web/accounts/",
+   "raw_web.accounts",
+   "2026-11-01 02:00:00.0"
+  ],
+  [
+   "files:/Volumes/landing/web/order_items/",
+   "raw_web.order_items",
+   "2026-11-01 02:00:00.0"
+  ],
+  [
+   "files:/Volumes/landing/web/orders/",
+   "raw_web.orders",
+   "2026-11-01 02:00:00.0"
+  ],
+  [
+   "files:/Volumes/landing/web/sessions/",
+   "raw_web.sessions",
+   "2026-11-01 02:00:00.0"
+  ],
+  [
+   "finance.monthly_close",
+   "exports.finance_ledger",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "finance.recognized_revenue",
+   "finance.monthly_close",
+   "2026-11-03 04:00:00.0"
+  ],
+  [
+   "raw_crm.contacts",
+   "core.customers",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_crm.contacts",
+   "marketing.customer_list",
+   "2026-10-05 05:00:00.0"
+  ],
+  [
+   "raw_pos.refunds",
+   "core.refunds",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_pos.refunds",
+   "finance.recognized_revenue",
+   "2026-11-03 04:00:00.0"
+  ],
+  [
+   "raw_pos.transaction_lines",
+   "core.order_lines",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_pos.transaction_lines",
+   "finance.recognized_revenue",
+   "2026-11-03 04:00:00.0"
+  ],
+  [
+   "raw_pos.transactions",
+   "core.orders",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_pos.transactions",
+   "finance.recognized_revenue",
+   "2026-11-03 04:00:00.0"
+  ],
+  [
+   "raw_web.accounts",
+   "core.customers",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_web.accounts",
+   "marketing.customer_list",
+   "2026-10-05 05:00:00.0"
+  ],
+  [
+   "raw_web.order_items",
+   "core.order_lines",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_web.order_items",
+   "finance.recognized_revenue",
+   "2026-11-03 04:00:00.0"
+  ],
+  [
+   "raw_web.orders",
+   "core.orders",
+   "2026-11-03 03:00:00.0"
+  ],
+  [
+   "raw_web.orders",
+   "finance.recognized_revenue",
+   "2026-11-03 04:00:00.0"
+  ],
+  [
+   "raw_web.sessions",
+   "marketing.campaign_attribution",
+   "2026-10-05 05:00:00.0"
+  ],
+  [
+   "ref.calendar",
+   "exports.partner_feed",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "ref.products",
+   "exports.partner_feed",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "ref.products",
+   "sales.order_facts",
+   "2026-11-03 03:30:00.0"
+  ],
+  [
+   "ref.products",
+   "sales.top_products",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "sales.customer_monthly",
+   "marketing.customer_360",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "sales.daily_sales",
+   "sales.top_products",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "sales.order_facts",
+   "exports.partner_feed",
+   "2026-11-03 08:41:00.0"
+  ],
+  [
+   "sales.order_facts",
+   "marketing.campaign_attribution",
+   "2026-10-05 05:00:00.0"
+  ],
+  [
+   "sales.order_facts",
+   "sales.customer_monthly",
+   "2026-11-03 03:30:00.0"
+  ]
+ ],
+ "columns": [
+  [
+   "sales.order_facts.net_amount",
+   "marketing.campaign_attribution.attributed_revenue",
+   "2026-11-03 08:20:00.0"
+  ],
+  [
+   "core.customers.customer_id",
+   "marketing.customer_list.customer_id",
+   "2026-11-02 06:10:00.0"
+  ],
+  [
+   "core.customers.region",
+   "marketing.customer_list.region",
+   "2026-11-02 06:10:00.0"
+  ]
+ ]
+}

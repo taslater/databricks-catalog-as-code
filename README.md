@@ -2,7 +2,7 @@
 
 Look at a Databricks Unity Catalog, and manage it as SQL files in git.
 
-Status: alpha (0.1.0a1). It has been tested only on Databricks Free Edition.
+Status: alpha (0.1.0a2). It has been tested only on Databricks Free Edition.
 
 ## Three kinds of file, each with one writer
 
@@ -91,7 +91,7 @@ them touches a catalog.
 | --- | --- |
 | `ucmodel` | Reads a Unity Catalog over REST into a normalised model, compiles source DDL into the same model, and compares two models. Its command takes snapshots and reports on them. No SQL warehouse needed |
 | `ucstate` | Imports a catalog as source files, plans and applies the changes that bring a catalog to its source, and records each deployment in the catalog |
-| `ucatlas` | Draws a catalog, or a snapshot of one, as a static site of ER diagrams and lineage graphs, and serves a local UI over the commands. Needs Graphviz |
+| `ucatlas` | Draws a catalog, or a snapshot of one, as a static site of ER diagrams and lineage graphs, writes an interactive explorer of a snapshot, and serves a local UI over the commands. Needs Graphviz |
 
 `ucstate` and `ucatlas` each depend on `ucmodel`, not on each other.
 
@@ -142,6 +142,7 @@ warehouse is needed. The commands below use the profile `my-profile`.
 uv run ucmodel --profile my-profile snapshot --catalog my_dev
 uv run ucmodel diff snapshots/OLDER.json snapshots/NEWER.json
 uv run ucatlas draw --snapshot snapshots/NEWER.json -o site
+uv run ucatlas explore --snapshot snapshots/NEWER.json --sql jobs/ -o explorer
 ```
 
 - `snapshot` writes `snapshots/<catalog>-<time>-<hash>.json` and prints its
@@ -154,6 +155,10 @@ uv run ucatlas draw --snapshot snapshots/NEWER.json -o site
   comment or a job summary; `--format json` suits a program.
 - `draw` writes a static site, one page per schema, from a snapshot or with
   `--catalog` from the live catalog. See [`docs/diagrams.md`](docs/diagrams.md).
+- `explore` writes one interactive page for the whole snapshot: lineage down
+  to the column, from the SQL and from what ran, with declared keys and
+  joins, to explore, compare tables and map the catalog. `--sql` adds the
+  statements that load it. See [`docs/explorer.md`](docs/explorer.md).
 
 ### The local UI
 
