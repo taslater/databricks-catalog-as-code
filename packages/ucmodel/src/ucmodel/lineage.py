@@ -14,12 +14,14 @@ Two kinds of edge are left out:
 - edges to notebooks, jobs and paths, which need `include_entity_lineage`.
   None has been seen on this workspace yet (docs/diagrams.md, section 7).
 
-A snapshot keeps what `read` found, as `to_json` writes it.
+A snapshot keeps what `read` found, as `to_json` writes it. A snapshot read
+with a warehouse can also hold, from query history, the statements that wrote
+each object (`Write`) and how often each was read (`Use`); `bulk` reads them.
 """
 
 from __future__ import annotations
 
-from dataclasses import astuple, dataclass, field
+from dataclasses import asdict, astuple, dataclass, field
 
 from .model import tabular
 from .progress import Progress
@@ -35,22 +37,63 @@ class Edge:
     seen: str  # the API's lineage_timestamp: when a statement last made the edge
 
 
+@dataclass(frozen=True)
+class Write:
+    """A statement that wrote an object, as query history has it: one per object and
+    statement text, however many times that text ran."""
+    target: str  # the object written, named as edges name it
+    sql: str
+    type: str  # query history's statement type: INSERT, MERGE, CREATE...
+    runs: int  # how many times it ran, in the time `bulk` reads
+    last: str  # when it last started, as `2026-11-04T17:28:20Z`
+    by: str | None  # who ran it last
+    client: str | None  # what ran it last, as query history names it: `Databricks CLI`...
+    source: dict[str, str]  # where it ran from last: `job_id`, `notebook_id`...
+    of: int  # how many statements wrote the object in that time; the latest are kept
+    reads: bool  # whether the lineage saw it read a table: False for DDL, `VALUES`...
+
+
+@dataclass(frozen=True)
+class Use:
+    """How often an object was read by queries that wrote nothing."""
+    target: str
+    queries: int
+    people: int
+    last: str
+
+
 @dataclass
 class Lineage:
     tables: list[Edge] = field(default_factory=list)
     columns: list[Edge] = field(default_factory=list)  # names are `schema.table.column`
+    writes: list[Write] | None = None  # None when query history wasn't read
+    uses: list[Use] | None = None
+    # the names of the jobs and pipelines the writes and the model name by id, keyed
+    # `job:<id>` and `pipeline:<id>`; None when they weren't looked up
+    names: dict[str, str] | None = None
 
     def upstream_columns(self, column: str) -> list[Edge]:
         return [e for e in self.columns if e.target == column]
 
     def to_json(self) -> dict:
-        """Each edge as `[source, target, seen]`."""
-        return {"tables": [list(astuple(e)) for e in self.tables],
-                "columns": [list(astuple(e)) for e in self.columns]}
+        """Each edge as `[source, target, seen]`, and writes and uses as objects, when
+        query history was read."""
+        out: dict = {"tables": [list(astuple(e)) for e in self.tables],
+                     "columns": [list(astuple(e)) for e in self.columns]}
+        if self.writes is not None:
+            out["writes"] = [asdict(w) for w in self.writes]
+        if self.uses is not None:
+            out["uses"] = [asdict(u) for u in self.uses]
+        if self.names is not None:
+            out["names"] = dict(sorted(self.names.items()))
+        return out
 
     @classmethod
     def from_json(cls, data: dict) -> Lineage:
-        return cls([Edge(*e) for e in data["tables"]], [Edge(*e) for e in data["columns"]])
+        writes, uses = data.get("writes"), data.get("uses")
+        return cls([Edge(*e) for e in data["tables"]], [Edge(*e) for e in data["columns"]],
+                   None if writes is None else [Write(**w) for w in writes],
+                   None if uses is None else [Use(**u) for u in uses], data.get("names"))
 
 
 def read(ws: Workspace, catalog: str, model: dict[str, dict],

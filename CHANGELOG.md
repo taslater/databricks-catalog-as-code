@@ -27,6 +27,17 @@ All notable changes are listed here. The format follows
 - A read no longer gets each table again after listing it: a schema's list
   holds all of a table's state.
 - `Workspace.sql` reads a result that comes in chunks to its end.
+- With `--warehouse`, a snapshot's lineage also holds, from
+  `system.query.history`, the statements that wrote each object in the last
+  90 days (one per text, with how often it ran, who ran it last and from
+  where, the latest ten for each object) and how many queries read each
+  object, by how many people, and the names of the jobs and pipelines they
+  ran from, and of the pipelines that refresh materialized views and
+  streaming tables, from `system.lakeflow`. `--no-history` leaves them out.
+  A snapshot without them is as before.
+- `probes/history_job.py` makes and runs a job that writes
+  `ucstate_test.kinds` from a notebook on serverless compute and a SQL file
+  on a warehouse, so query history has a job's statements to show.
 
 ### ucatlas
 
@@ -38,6 +49,13 @@ All notable changes are listed here. The format follows
   columns they read, from its YAML, which needs PyYAML.
 - A column edge in the platform's lineage to a column the object doesn't
   have (a materialized view's backing table's) is left out.
+- From a snapshot with query history, the statements that ran are read as
+  SQL files are, for column lineage, joins and filters, and an object's
+  panel says how often each ran, who ran it last and from where (a job and
+  a pipeline by name), counts them as writes, and says how many queries
+  read the object and by how many people. A materialized view's or a
+  streaming table's panel names the pipeline that refreshes it.
+- A filter reads `x IS NOT NULL` as written, not `NOT x IS NULL`.
 
 - When Graphviz is missing, the error names the program it needs and how to
   install Graphviz on this platform (Homebrew, winget, apt or dnf), or with

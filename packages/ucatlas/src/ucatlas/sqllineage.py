@@ -295,8 +295,19 @@ def _filters(query: exp.Expr) -> list[str]:
         sub = w.parent.parent if w.parent else None
         if isinstance(sub, exp.Subquery) and not isinstance(sub.parent, (exp.From, exp.Join)):
             continue
-        out.append(w.this.sql(D))
+        out.append(_as_written(w.this))
     return out
+
+
+def _as_written(condition: exp.Expr) -> str:
+    """A condition's SQL, with `x IS NOT NULL` as people write it: sqlglot keeps it as
+    NOT (x IS NULL), and prints `NOT x IS NULL`."""
+    def is_not(node: exp.Expr) -> exp.Expr:
+        inner = node.this if isinstance(node, exp.Not) else None
+        if isinstance(inner, exp.Is) and isinstance(inner.expression, exp.Null):
+            return exp.Var(this=f"{inner.this.sql(D)} IS NOT NULL")
+        return node
+    return condition.copy().transform(is_not).sql(D)
 
 
 def _joins(tree: exp.Expr) -> list[tuple[str, str]]:
@@ -435,18 +446,25 @@ def analyse(via: str, sql: str, model: dict[str, dict], catalog: str, *,
 
 def statements(model: dict[str, dict], catalog: str,
                files: Iterable[tuple[str, str]] = (),
-               progress: Progress | None = None) -> list[Statement]:
+               progress: Progress | None = None,
+               ran: Iterable[tuple[str, str, str, bool]] = ()) -> list[Statement]:
     """The lineage of every definition (a view's, a materialized view's, a streaming
-    table's, a metric view's), and of each statement in `files`, (name, text) pairs,
-    that writes an object. A file's `CREATE VIEW` (or `MATERIALIZED VIEW`) for an object
-    the model has a definition of is skipped: the definition the catalog holds wins."""
+    table's, a metric view's), of each statement in `files`, (name, text) pairs, that
+    writes an object, and of each statement that `ran`, from query history: (via,
+    object, text, whether the lineage saw it read a table). A file's or history's
+    `CREATE VIEW` (or `MATERIALIZED VIEW`) for an object the model has a definition of
+    is skipped: the definition the catalog holds wins. A statement from history writes
+    its object even when it has no lineage to read (a `DELETE`, an `INSERT ... VALUES`),
+    and one that reads as writing some other object than the lineage says it wrote is a
+    gap. One that read no table has no lineage to miss, so SQL that sqlglot can't parse
+    there is no gap."""
     schema = glot_schema(model)
-    files = list(files)
+    files, ran = list(files), list(ran)
     definitions = [(name, obj, how) for name, obj in sorted(objects(model).items())
                    if (how := defined(obj))]
     out = []
     with (progress or Progress.off()).step(
-            "reading the SQL", len(definitions) + len(files),
+            "reading the SQL", len(definitions) + len(files) + len(ran),
             ("definition or file", "definitions and files")) as step:
         for name, obj, how in definitions:
             st = (analyse(name, obj["definition"], model, catalog, schema=schema, view=name)
@@ -458,6 +476,17 @@ def statements(model: dict[str, dict], catalog: str,
         for fname, text in files:
             out += _file_statements(fname, text, model, catalog, schema, views)
             step.tick(detail=fname)
+        for via, target, sql, reads in ran:
+            # a statement that ran wrote its object, even one with no lineage to read
+            st = analyse(via, sql, model, catalog, schema=schema)
+            if st is None or (st.errors and not reads):
+                st = Statement(via, "statement", target, sql)
+            if st.target not in (target, None):
+                st = Statement(via, "unread", target, sql, errors=[
+                    f"it reads as writing {st.target}, but the lineage says it wrote {target}"])
+            if not (st.kind in ("view", "create") and st.target in views):
+                out.append(st)
+            step.tick(detail=target)
     return out
 
 

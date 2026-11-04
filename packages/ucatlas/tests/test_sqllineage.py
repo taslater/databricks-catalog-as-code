@@ -159,3 +159,13 @@ def test_a_file_that_cant_be_split_is_a_gap_and_the_rest_are_read(model, monkeyp
     assert [(s.via, s.errors) for s in unread] == [
         ("x.sql", ["couldn't split it into statements: unterminated string"])]
     assert any(s.via.startswith("build_core.sql:") for s in st)
+
+
+def test_a_filter_reads_as_written(model):
+    st = analyse(model, "CREATE TABLE core.x AS SELECT s.session_id FROM raw_web.sessions AS s "
+                        "WHERE s.session_id IS NOT NULL AND NOT (s.session_id > 1)")
+    # sqlglot alone prints `NOT s.session_id IS NULL`; other NOTs stay as they are
+    assert st.filters == ["s.session_id IS NOT NULL AND NOT (s.session_id > 1)"]
+    st = analyse(model, "CREATE TABLE core.x AS SELECT s.session_id FROM raw_web.sessions AS s "
+                        "WHERE NOT s.session_id IS NULL")
+    assert st.filters == ["s.session_id IS NOT NULL"]  # the same condition, written either way

@@ -162,11 +162,25 @@ const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
 $("#snap").textContent = `${G.meta.catalog} · ${when(G.meta.taken_at)}`;
 $("#snap").title = [`A snapshot of ${G.meta.catalog}${G.meta.snapshot ? " (" + G.meta.snapshot + ")" : ""}, taken ${when(G.meta.taken_at)}.`,
   G.meta.lineage ? "Lineage the platform recorded is included." : "The snapshot has no lineage the platform recorded: edges come from SQL only.",
-  `${G.meta.statements} statements read with sqlglot ${G.meta.sqlglot}, from definitions${G.meta.sql_files ? ` and ${G.meta.sql_files} SQL files` : ""}.`].join("\n");
+  `${G.meta.statements} statements read with sqlglot ${G.meta.sqlglot}, from definitions${G.meta.sql_files ? `, ${G.meta.sql_files} SQL files` : ""}${G.meta.history ? " and query history" : ""}.`].join("\n");
 if (G.gaps.length) { $("#gaps").textContent = `⚠ ${G.gaps.length} lineage gap${G.gaps.length === 1 ? "" : "s"}`; $("#gaps").classList.remove("hidden"); }
 
 // ---------------------------------------------------------------- the graph's indexes
 const byId = new Map(G.nodes.map(n => [n.id, n]));
+// what query history says of each statement that came from it, by its via
+const RAN = new Map(G.nodes.flatMap(n => n.writers.filter(w => w.ran).map(w => [w.via, w.ran])));
+const times = n => `${fmt(n)} time${n === 1 ? "" : "s"}`;
+// a job's or a pipeline's name, when the snapshot has it, else its id
+const named = (kind, id) => G.names[`${kind}:${id}`] ? `“${G.names[`${kind}:${id}`]}”` : id;
+// where a statement from query history last ran from, as its ids say
+function ranFrom(r) {
+  const s = r.source, ids = [
+    s.job_id && `job ${named("job", s.job_id)}${s.job_run_id ? ", run " + s.job_run_id : ""}`, s.pipeline_id && `pipeline ${named("pipeline", s.pipeline_id)}`,
+    s.notebook_id && `notebook ${s.notebook_id}`, s.dashboard_id && `dashboard ${s.dashboard_id}`,
+    s.legacy_dashboard_id && `dashboard ${s.legacy_dashboard_id}`, s.sql_query_id && `saved query ${s.sql_query_id}`,
+    s.alert_id && `alert ${s.alert_id}`, s.genie_space_id && `Genie space ${s.genie_space_id}`].filter(Boolean);
+  return [r.client, ...ids].filter(Boolean).map(esc).join(", ");
+}
 // each kind of object in the catalog: its icon, what it is called, and whether it holds data, as a
 // table does (the lineage says when it was last written), or is computed when it is read
 const KIND = {
@@ -619,6 +633,8 @@ function edgeTip(e) {
 // a statement's name: a view, or a SQL file and the statement's number in it
 function viaText(via) {
   if (via === "lineage") return "the platform's lineage";
+  const r = RAN.get(via);
+  if (r) return `<b>${esc(r.type)}</b> from query history, last run ${when(r.last)}`;
   const m = /^(.*\.sql):(\d+)$/.exec(via);
   if (m) return `<b>${esc(m[1])}</b>, statement ${m[2]}`;
   return inCatalog(byId.get(via)) ? `the definition of <b>${esc(via)}</b>` : `<b>${esc(via)}</b>`;
@@ -774,7 +790,7 @@ async function renderExplore() {
       if (!ps || !pt || y1 == null || y2 == null) return;
       const x1 = ps.x + W, x2 = pt.x, dx = Math.max(40, Math.abs(x2 - x1) / 2);
       tg.append("path").attr("class", "trace " + (isUp ? "up" : "down")).attr("d", `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`)
-        .on("mousemove", ev => showTip(ev, `<code>${esc(short(e.s))}</code> → <code>${esc(short(e.t))}</code><br>${e.steps.length ? e.steps.map(s => `<code>${esc(s)}</code>`).join(" ← ") : "copied as is"}<br>via ${esc(e.via)}`)).on("mouseleave", hideTip);
+        .on("mousemove", ev => showTip(ev, `<code>${esc(short(e.s))}</code> → <code>${esc(short(e.t))}</code><br>${e.steps.length ? e.steps.map(s => `<code>${esc(s)}</code>`).join(" ← ") : "copied as is"}<br>via ${viaText(e.via)}`)).on("mouseleave", hideTip);
     });
     drawn.nodes.forEach((g, id) => g.classed("faded", !trace.tables.has(id)));
     drawn.edges.forEach(({ e, el }) => el.classed("faded", !(trace.tables.has(e.s) && trace.tables.has(e.t))));
@@ -827,8 +843,14 @@ function written(n) {
   if (computed(n)) return `<span class="status view">a view: computed when it is read</span>`;
   if (!stored(n)) return `<span class="status outside">outside the snapshot</span>`;
   if (!G.meta.lineage) return `<span class="status unseen">the snapshot has no lineage, so its writes aren't known</span>`;
-  if (!n.written) return `<span class="status unseen">no write in the lineage</span>`;
-  return `<span class="status ${age(n)}">${when(n.written)}</span> <span class="sub">${AGE_TEXT[age(n)]} the snapshot: the latest write the lineage recorded</span>`;
+  const recorded = G.meta.history ? "the lineage or query history" : "the lineage";
+  if (!n.written) return `<span class="status unseen">no write in ${recorded}</span>`;
+  return `<span class="status ${age(n)}">${when(n.written)}</span> <span class="sub">${AGE_TEXT[age(n)]} the snapshot: the latest write ${recorded} recorded</span>`;
+}
+// how many more statements query history has for an object than the snapshot kept
+function moreRan(n) {
+  const kept = n.writers.filter(w => w.ran), of = kept.length ? Math.max(...kept.map(w => w.ran.of)) : 0;
+  return of > kept.length ? `<p class="sub">Query history has ${of - kept.length} more statement${of - kept.length === 1 ? "" : "s"} that wrote it; the snapshot keeps the latest ${kept.length}.</p>` : "";
 }
 function panelNode(id) {
   const n = byId.get(id); if (!n) return;
@@ -848,9 +870,13 @@ function panelNode(id) {
     ${n.columns.length ? `<h3>Columns</h3><table class="cols">${n.columns.map(c => {
       const key = n.pk.includes(c.name) ? "PK" : n.fks.some(f => f.columns.includes(c.name)) ? "FK" : "";
       return `<tr class="click" data-col="${esc(id + "." + c.name)}"><td style="color:#9a6700">${key}</td><td><b>${esc(c.name)}</b>${Object.entries(c.tags).map(([k, v]) => ` <span class="chip pii">${esc(k)}: ${esc(v)}</span>`).join("")}<br><span class="sub">${esc(c.comment || "")}</span></td><td class="sub">${esc(c.type)}</td></tr>`; }).join("")}</table>` : ""}
-    ${n.writers.length || seenOnly.length ? `<h3>Written by</h3>${n.writers.map(w => `<p>${viaText(w.via)}</p>
+    ${n.pipeline ? `<h3>Refreshed by</h3><p>pipeline ${esc(named("pipeline", n.pipeline))}</p>` : ""}
+    ${n.writers.length || seenOnly.length ? `<h3>Written by</h3>${n.writers.map(w => `<p>${viaText(w.via)}${w.ran ? `<br><span class="sub">ran ${times(w.ran.runs)} in the last 90 days; last by ${esc(w.ran.by || "someone")}${ranFrom(w.ran) ? ", from " + ranFrom(w.ran) : ""}</span>` : ""}</p>
       ${w.filters.length ? `<p>Rows arrive only where ${w.filters.map(f => `<code>${esc(f)}</code>`).join(" and ")}</p>` : ""}<details><summary>SQL</summary><pre>${esc(w.sql)}</pre></details>`).join("")}
-      ${seenOnly.length ? `<p class="sub">The lineage also saw it written from ${seenOnly.map(e => link(e.s)).join(", ")}, by something whose SQL wasn't read here.</p>` : ""}` : ""}
+      ${seenOnly.length ? `<p class="sub">The lineage also saw it written from ${seenOnly.map(e => link(e.s)).join(", ")}, by something whose SQL wasn't read here.</p>` : ""}
+      ${moreRan(n)}` : ""}
+    ${G.meta.history && inside ? `<h3>Read by</h3><p>${n.uses ? `${fmt(n.uses.queries)} quer${n.uses.queries === 1 ? "y" : "ies"} by ${fmt(n.uses.people)} ${n.uses.people === 1 ? "person" : "people"} in the last 90 days, the last ${when(n.uses.last)}` : `<span class="status unseen">no query read it in the last 90 days</span>`}</p>
+      <p class="sub">Queries that only read, as the lineage recorded them; a statement that reads it to write another object is upstream of that object instead.</p>` : ""}
     ${inside ? `<h3>Last written</h3><p>${written(n)}</p>
       <h3>Definition</h3><p>${n.created ? `created ${when(n.created)}` : ""}${n.changed && n.changed !== n.created ? `<br>last changed ${when(n.changed)}` : ""}</p>` : ""}`;
   wirePanel();
@@ -1187,7 +1213,7 @@ async function renderCompare() {
     <p class="sub">Columns share a row when their values trace back to the same source columns (declared keys count as the same values), or failing that, similar names. A marked row is computed differently in different tables. Click a cell to trace it.</p>
     <table class="grid"><tr><th>concept</th>${tables.map(t => `<th style="border-top:3px solid ${cc(t)}">${esc(t)}</th>`).join("")}</tr>
     ${rows.map(r => `<tr class="${r.differs ? "differs" : ""}"><td class="concept"><b>${esc(r.name)}</b>${r.isKey ? ' <span class="chip">key</span>' : ""}</td>${tables.map(t => { const m = r.g[t]; if (!m) return `<td class="empty"></td>`;
-      const ne = nearestExpr(m.cid); return `<td data-cell="${esc(m.cid)}" style="cursor:pointer"><span class="cell-name">${esc(m.c.name)}</span><span class="cell-type">${esc(m.c.type)}</span>${ne ? ne.exprs.map(e => `<span class="cell-expr">${esc(e)}</span>`).join("") + `<span class="cell-via">${esc(ne.via.join(", "))}</span>` : `<span class="cell-via">copied from upstream</span>`}</td>`; }).join("")}</tr>`).join("")}</table>
+      const ne = nearestExpr(m.cid); return `<td data-cell="${esc(m.cid)}" style="cursor:pointer"><span class="cell-name">${esc(m.c.name)}</span><span class="cell-type">${esc(m.c.type)}</span>${ne ? ne.exprs.map(e => `<span class="cell-expr">${esc(e)}</span>`).join("") + `<span class="cell-via">${esc(ne.via.map(v => RAN.has(v) ? RAN.get(v).type + " from query history" : v).join(", "))}</span>` : `<span class="cell-via">copied from upstream</span>`}</td>`; }).join("")}</tr>`).join("")}</table>
     <h3>Shared ancestry</h3><p class="sub">Everything upstream of the compared tables. The colored squares on each box show which compared tables it feeds: a box with every color is a shared source. Hover a box to see its edges.</p>
     <div id="ancestry"><svg><g id="anc"></g></svg></div><div class="sub" id="anc-note" style="margin-top:4px"></div>
     <h3>Checks to run on a warehouse</h3><p class="sub">Written from what the lineage says about keys and measures. ucatlas doesn't run them: copy one into a SQL editor.</p>
