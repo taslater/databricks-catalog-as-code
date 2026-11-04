@@ -3,15 +3,25 @@
 All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## 0.1.0
+
+The first release that isn't a pre-release. `ucmodel` and `ucatlas` are
+beta and `ucstate` is alpha, as their classifiers say.
 
 ### ucmodel
 
+- `snapshot` writes its progress to stderr: listing schemas, reading their
+  objects, and reading table and column lineage. On a terminal that is one
+  line drawn again in place, with an estimate of the time left; elsewhere,
+  a line as each step starts and ends. `--quiet` turns it off.
+- Schemas are listed eight at a time, as objects already were, and every
+  object of every schema is read in one pool rather than schema by schema.
+  What a read returns is unchanged.
 - An object outside the model that has columns (a materialized view, a
   streaming table, a metric view, an external or foreign table) keeps its
   columns, its definition and its tags, and its pipeline's id in `meta`.
   It is still `unsupported`, and `ucstate` still leaves it alone. A diff
-  between a snapshot from 0.1.0 and a later one shows these as changes.
+  between a snapshot from 0.1.0a2 and a later one shows these as changes.
 - Lineage is read for those objects too.
 - `snapshot` names them by type in what it prints ("1 materialized view").
 - `samples.scrub` also replaces cloud storage URLs, which a pipeline's
@@ -50,6 +60,10 @@ All notable changes are listed here. The format follows
 
 ### ucatlas
 
+- `draw` and `explore` write their progress the same way: reading the
+  catalog (`draw --catalog`), reading the SQL, laying out, and drawing.
+  `--quiet` turns it off.
+- Needs ucmodel 0.1.0.
 - The explorer draws materialized views, streaming tables, metric views and
   external and foreign tables, in every mode and on the map, each with its
   own icon and name. A materialized view's and a streaming table's lineage
@@ -74,35 +88,12 @@ All notable changes are listed here. The format follows
 - A statement that ran in a job names its task and what the task runs. An
   object's writers from one job are listed under it, and a job's panel
   shows its tasks in order, what each wrote and read, and highlights them.
-
 - When Graphviz is missing, the error names the program it needs and how to
   install Graphviz on this platform (Homebrew, winget, apt or dnf), or with
   conda anywhere.
 - Graphviz is also looked for where its installers put it, so a PATH
   without Homebrew's folder (an editor started from the Dock, say) or a
   Windows install that didn't change the PATH still finds it.
-
-## 0.1.0
-
-The first release that isn't a pre-release. `ucmodel` and `ucatlas` are
-beta and `ucstate` is alpha, as their classifiers say.
-
-### ucmodel
-
-- `snapshot` writes its progress to stderr: listing schemas, reading their
-  objects, and reading table and column lineage. On a terminal that is one
-  line drawn again in place, with an estimate of the time left; elsewhere,
-  a line as each step starts and ends. `--quiet` turns it off.
-- Schemas are listed eight at a time, as objects already were, and every
-  object of every schema is read in one pool rather than schema by schema.
-  What a read returns is unchanged.
-
-### ucatlas
-
-- `draw` and `explore` write their progress the same way: reading the
-  catalog (`draw --catalog`), reading the SQL, laying out, and drawing.
-  `--quiet` turns it off.
-- Needs ucmodel 0.1.0.
 
 ### ucstate
 
