@@ -30,8 +30,10 @@ python3 -m http.server --bind 127.0.0.1 --directory explorer 8000
 It needs Graphviz's `dot` and `neato` on the PATH, like `ucatlas draw`.
 
 **The page holds what the snapshot holds**, owners' names and view
-definitions included, plus the text of the SQL files given. Keep it where
-the catalog's metadata may go.
+definitions included, plus the text of the SQL files given. A snapshot read
+with a warehouse also holds the statements from query history, with any
+values written in them, and who ran each. Keep the page where the catalog's
+metadata, and that SQL, may go.
 
 ## Where the edges come from
 
@@ -51,6 +53,20 @@ came from:
   the snapshot holds with when each edge was last seen. It covers writes
   the SQL files don't, such as notebooks, but not how a column was
   computed.
+- **Query history**, when the snapshot was read with a warehouse
+  (`ucmodel snapshot --warehouse`): each statement that wrote an object in
+  the last 90 days, from the lineage joined to `system.query.history`, one
+  per text, the latest ten for each object. Its SQL is read as a file's is,
+  so it gives column lineage, joins and filters for writes no SQL file
+  holds, and an object's panel says how often each ran, who ran it last and
+  from where (a job and its run, a notebook, a dashboard, the CLI). A
+  statement the lineage says wrote one object but that reads as writing
+  another is a gap. One with no lineage to read (`DELETE`, `INSERT ...
+  VALUES`, a `CREATE TABLE` with columns) is still listed as a writer, and
+  counts as a write for "last written". Query history covers SQL warehouses
+  and serverless compute; a pipeline's refreshes have no statement there,
+  so a materialized view's or a streaming table's panel names the pipeline
+  that refreshes it instead.
 
 A materialized view and a streaming table hold data, so, as for a table,
 the lineage says when each was last written (refreshed, for them). A view
@@ -79,7 +95,17 @@ A statement that writes an object but that sqlglot can't read, such as
 `APPLY CHANGES INTO`, is a **lineage gap**. Its target is still drawn,
 marked ⚠, and the page's ⚠ chip lists every gap with the statement and the
 reason. A statement that writes no object (`GRANT`, `OPTIMIZE`, a bare
-query) is not a gap. The command prints how many gaps there are.
+query) is not a gap, nor is one from query history that the lineage saw
+read no table, which has no lineage to miss. The command prints how many
+gaps there are.
+
+## Who reads an object
+
+With query history, an object's panel also says how many queries read it
+in the last 90 days, by how many people, and when last: queries that wrote
+nothing, as the lineage recorded them. A statement that reads an object to
+write another is upstream of that one instead. An object no query read in
+that time says so.
 
 ## The three modes
 
@@ -139,13 +165,16 @@ second, and the map in under one.
 A snapshot holds structure and the lineage the platform recorded, and that
 is all the explorer reads. It doesn't know what only a warehouse can say:
 
-- what a write did (rows written, the operation, who ran it), or how big a
-  table is, which `DESCRIBE HISTORY` and `DESCRIBE DETAIL` say;
+- how big a table is, or what a write did to it beyond its SQL (rows
+  written, files), which `DESCRIBE DETAIL`, `DESCRIBE HISTORY` and
+  `system.storage.table_metrics_history` say;
 - what the data looks like: row counts, nulls, distinct values, ranges;
 - whether a declared key holds. Primary and foreign keys in Unity Catalog
   are informational, not enforced, so the explorer takes them as declared;
-- which job, notebook or query wrote or read a table, and how often tables
-  are read and joined, which the system tables record.
+- without query history, which job, notebook or query wrote or read a
+  table. With it, a job and a pipeline go by their names, from
+  `system.lakeflow`, which has a job some time after it is created; a
+  notebook, a dashboard and a saved query go by their ids.
 
 The checks Compare writes are where to start with the first three.
 

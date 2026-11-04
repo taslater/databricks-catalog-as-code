@@ -169,6 +169,7 @@ class Kinds(SavedWorkspace):
         self.warehouse_id: str | None = "w"
         self.refuse = refuse
         self.statements: list[str] = []
+        self.history: dict[str, list[dict]] = {bulk.WRITES: [], bulk.USES: []}
 
     def catalog(self, name):
         return {"name": name}
@@ -181,6 +182,10 @@ class Kinds(SavedWorkspace):
         if self.refuse:
             raise SqlError("[INSUFFICIENT_PERMISSIONS] not for you")
         tags, grants, functions = rows({"schemas": self.raw})
+        if statement in (bulk.WRITES, bulk.USES):
+            return self.history[statement]
+        if statement == bulk.NAMES:
+            return [{"id": "pipeline:p", "name": "MV-kinds"}]
         if "_lineage" in statement:
             return []
         return {bulk.TAGS: tags, bulk.GRANTS: grants, bulk.FUNCTIONS: functions}[statement]
@@ -191,19 +196,21 @@ def test_a_snapshot_with_a_warehouse_is_the_snapshot_over_rest():
     rest_only.warehouse_id = None
     assert (take(with_warehouse, "ucstate_test", ["kinds"]).model
             == take(rest_only, "ucstate_test", ["kinds"]).model == samples.model("kinds"))
-    assert len(with_warehouse.statements) == 5
+    assert len(with_warehouse.statements) == 8  # with one naming the two pipelines
 
 
 def test_a_query_that_fails_falls_back_to_rest_and_says_so():
     ws, out = Kinds(refuse=True), io.StringIO()
     s = take(ws, "ucstate_test", ["kinds"], progress=Progress(out, live=False))
     assert s.model == samples.model("kinds")
-    notes = [line for line in out.getvalue().splitlines() if "over REST" in line]
+    notes = [line for line in out.getvalue().splitlines()
+             if "over REST" in line or "no query history" in line]
     assert notes == [
         "reading tags, grants and functions over REST: information_schema can't be read: "
         "[INSUFFICIENT_PERMISSIONS] not for you",
         "reading lineage over REST: the system tables can't be read: "
-        "[INSUFFICIENT_PERMISSIONS] not for you"]
+        "[INSUFFICIENT_PERMISSIONS] not for you",
+        "no query history: it can't be read: [INSUFFICIENT_PERMISSIONS] not for you"]
 
 
 def test_without_a_warehouse_no_statement_runs():
@@ -230,3 +237,98 @@ def test_a_result_in_chunks_is_read_to_its_end():
         get_statement_result_chunk_n=lambda statement_id, chunk: chunks[chunk])
     ws = Workspace(SimpleNamespace(statement_execution=api), "w")  # type: ignore[arg-type]
     assert ws.sql("SELECT n") == [{"n": "1"}, {"n": "2"}, {"n": "3"}]
+
+
+# query history --------------------------------------------------------------------------
+
+def write_row(t: str, sql: str, last: str, runs: int = 1, of: int = 1, **more) -> dict:
+    return {"s": "kinds", "t": t, "sql": sql, "type": more.get("type", "INSERT"),
+            "runs": str(runs), "last": last, "by": "owner@example.com",
+            "client": more.get("client", "Databricks CLI"),
+            "source": more.get("source", '{"job_info":{},"pipeline_info":{}}'), "of": str(of),
+            "reads": more.get("reads", "true")}
+
+
+def test_history_rows_read_as_writes_of_the_models_objects_latest_first(kinds):
+    writes, uses = bulk.ran(kinds, [
+        write_row("orders", "INSERT INTO kinds.orders SELECT 1", "2026-11-04T17:00:00.5Z"),
+        write_row("orders", "INSERT INTO kinds.orders SELECT 2", "2026-11-04T18:00:00Z", runs=3,
+                  of=2, source='{"job_info":{"job_id":"11","job_run_id":"12"},"pipeline_info":{}}',
+                  client="Jobs"),
+        write_row("dropped", "INSERT INTO kinds.dropped SELECT 1", "2026-11-04T18:00:00Z"),
+        write_row("orders_feed", "INSERT INTO kinds.orders_feed SELECT 1", "2026-11-01T00:00:00Z"),
+    ], [{"s": "kinds", "t": "orders", "queries": "7", "people": "2",
+         "last": "2026-11-04T19:00:00.1Z"},
+        {"s": "kinds", "t": "dropped", "queries": "1", "people": "1",
+         "last": "2026-11-04T19:00:00Z"}])
+    assert [(w.target, w.sql[-1]) for w in writes] == [
+        ("kinds.orders", "2"), ("kinds.orders", "1"), ("kinds.orders_feed", "1")]
+    latest = writes[0]
+    assert (latest.runs, latest.last, latest.of, latest.client) == (
+        3, "2026-11-04T18:00:00Z", 2, "Jobs")
+    assert latest.source == {"job_id": "11", "job_run_id": "12"}
+    assert writes[1].source == {} and writes[1].reads
+    assert [(u.target, u.queries, u.people, u.last) for u in uses] == [
+        ("kinds.orders", 7, 2, "2026-11-04T19:00:00Z")]
+
+
+def test_a_snapshot_keeps_query_history_in_its_lineage(tmp_path):
+    from ucmodel.snapshot import load, write
+    ws = Kinds()
+    ws.history[bulk.WRITES] = [write_row("orders", "INSERT INTO kinds.orders SELECT 1",
+                                         "2026-11-04T17:00:00Z")]
+    s = take(ws, "ucstate_test", ["kinds"])
+    assert s.lineage is not None and s.lineage.writes and s.lineage.uses == []
+    assert load(write(s, tmp_path / "s.json")).lineage == s.lineage
+
+
+def test_without_history_a_snapshots_lineage_is_as_before(tmp_path):
+    from ucmodel.snapshot import load, write
+    s = take(Kinds(), "ucstate_test", ["kinds"], with_history=False)
+    assert s.lineage is not None and s.lineage.writes is None
+    assert "writes" not in s.lineage.to_json()  # so the hash of such a snapshot is as before
+    assert load(write(s, tmp_path / "s.json")).lineage == s.lineage
+
+
+class Names:
+    """A warehouse that answers the names query, and keeps what it was asked."""
+
+    def __init__(self, rows):
+        self.rows, self.asked = rows, []
+
+    def sql(self, statement, params=None):
+        self.asked.append(params)
+        return self.rows
+
+
+def test_jobs_and_pipelines_are_named_from_the_writes_and_the_models_pipelines(kinds):
+    from ucmodel.lineage import Write
+    writes = [Write("kinds.orders", "INSERT ...", "INSERT", 1, "2026-11-04T17:00:00Z", None, None,
+                    {"job_id": "11", "job_run_id": "12"}, 1, True)]
+    ws = Names([{"id": "job:11", "name": "nightly"}, {"id": "pipeline:p1", "name": None}])
+    found = bulk.names(ws, kinds, writes)  # type: ignore[arg-type]
+    assert found == {"job:11": "nightly"}  # a name the table doesn't have is left out
+    pipelines = sorted(o["meta"]["pipeline_id"] for o in kinds.values()
+                       if (o.get("meta") or {}).get("pipeline_id"))
+    assert ws.asked == [{"jobs": "11", "pipelines": ",".join(pipelines)}]
+    assert len(pipelines) == 2  # the materialized view's and the streaming table's
+
+
+def test_with_nothing_to_name_no_query_runs():
+    ws = Names([])
+    assert bulk.names(ws, {}, []) == {}  # type: ignore[arg-type]
+    assert ws.asked == []
+
+
+def test_one_query_is_counted_as_one_query(kinds):
+    out = io.StringIO()
+    bulk.names(Names([]), kinds, [], progress=Progress(out, live=False))  # type: ignore[arg-type]
+    assert "naming jobs and pipelines: 1 query" in out.getvalue()
+    assert "querie " not in out.getvalue() and "querie\n" not in out.getvalue()
+
+
+def test_the_control_two_queries_are_counted_as_queries(kinds):
+    out = io.StringIO()
+    bulk.history(Kinds(), "ucstate_test", kinds,  # type: ignore[arg-type]
+                 progress=Progress(out, live=False))
+    assert "reading query history: 2 queries" in out.getvalue()

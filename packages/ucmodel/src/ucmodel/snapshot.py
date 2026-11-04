@@ -15,7 +15,9 @@ can't be changed, such as a CI job's artifacts. The file is named for its
 catalog, when it was taken and the start of its hash, and `write` never
 replaces a file.
 
-A snapshot holds what the API returns, including owners' names.
+A snapshot holds what the API returns, including owners' names. One read
+with a warehouse also holds statements from query history, with any values
+written in them, and who ran each.
 """
 
 from __future__ import annotations
@@ -60,11 +62,13 @@ class Snapshot:
 
 
 def take(ws: Workspace, catalog: str, schemas: list[str] | None = None, *,
-         with_lineage: bool = True, now: datetime | None = None,
+         with_lineage: bool = True, with_history: bool = True, now: datetime | None = None,
          progress: Progress | None = None) -> Snapshot:
     """Read the schemas, or every schema but `information_schema`. With a warehouse
     (`ws.warehouse_id`), tags, grants and lineage come from queries, and each falls
-    back to REST, saying so, when its query fails."""
+    back to REST, saying so, when its query fails. With lineage, a warehouse and
+    `with_history`, the lineage also has the statements query history says wrote each
+    object, and how often each was read; without them when it can't be read."""
     p = progress or Progress.off()
     if ws.catalog(catalog) is None:
         raise SnapshotError(f"catalog {catalog} not found")
@@ -88,6 +92,17 @@ def take(ws: Workspace, catalog: str, schemas: list[str] | None = None, *,
             p.note(f"reading lineage over REST: the system tables can't be read: {e.summary}")
     if with_lineage and edges is None:
         edges = lineage.read(ws, catalog, model, p)
+    if edges is not None and with_history and ws.warehouse_id:
+        try:
+            edges.writes, edges.uses = bulk.history(ws, catalog, model, p)
+        except SqlError as e:
+            p.note(f"no query history: it can't be read: {e.summary}")
+        else:
+            try:
+                edges.names = bulk.names(ws, model, edges.writes, p)
+            except SqlError as e:
+                p.note(f"jobs and pipelines go by their ids: system.lakeflow can't be "
+                       f"read: {e.summary}")
     return make(catalog, names, now or datetime.now(UTC), model, edges)
 
 
