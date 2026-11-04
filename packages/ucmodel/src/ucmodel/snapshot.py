@@ -2,8 +2,11 @@
 
 A snapshot is written once, by `ucmodel snapshot`, and after that only read.
 Reports, drawings and plan previews are made from snapshots, so a catalog
-is read once however many times it is looked at. Reading costs no warehouse,
-but it takes several REST calls per table and, with lineage, one per column.
+is read once however many times it is looked at. Over REST alone, reading
+takes a few calls per table and, with lineage, one per column. Given a SQL
+warehouse, it reads tags, grants, functions' names and lineage for the whole
+catalog in five queries instead (`bulk`), and lists each schema's tables and
+volumes over REST.
 
 The file holds a hash of everything else in it, and `load` refuses a file
 whose contents don't match. That catches an edit. It doesn't stop someone
@@ -24,11 +27,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import lineage, reader
+from . import bulk, lineage, reader
 from .lineage import Lineage
 from .normalise import normalise
 from .progress import Progress
-from .workspace import Workspace
+from .workspace import SqlError, Workspace
 
 FORMAT = "ucmodel.snapshot/1"
 STAMP = "%Y-%m-%dT%H:%M:%SZ"
@@ -59,16 +62,33 @@ class Snapshot:
 def take(ws: Workspace, catalog: str, schemas: list[str] | None = None, *,
          with_lineage: bool = True, now: datetime | None = None,
          progress: Progress | None = None) -> Snapshot:
-    """Read the schemas, or every schema but `information_schema`, over REST."""
+    """Read the schemas, or every schema but `information_schema`. With a warehouse
+    (`ws.warehouse_id`), tags, grants and lineage come from queries, and each falls
+    back to REST, saying so, when its query fails."""
+    p = progress or Progress.off()
     if ws.catalog(catalog) is None:
         raise SnapshotError(f"catalog {catalog} not found")
     names = sorted(schemas or reader.schemas(ws, catalog))
-    raw = reader.read(ws, catalog, names, progress)
+    found = None
+    if ws.warehouse_id:
+        try:
+            found = bulk.read(ws, catalog, p)
+        except SqlError as e:
+            p.note(f"reading tags, grants and functions over REST: information_schema "
+                   f"can't be read: {e.summary}")
+    raw = reader.read(ws, catalog, names, p, found)
     if missing := [name for name, schema in raw["schemas"].items() if schema is None]:
         raise SnapshotError(f"schema {', '.join(missing)} not found in {catalog}")
     model = normalise(raw)
-    found = lineage.read(ws, catalog, model, progress) if with_lineage else None
-    return make(catalog, names, now or datetime.now(UTC), model, found)
+    edges = None
+    if with_lineage and ws.warehouse_id:
+        try:
+            edges = bulk.lineage(ws, catalog, model, p)
+        except SqlError as e:
+            p.note(f"reading lineage over REST: the system tables can't be read: {e.summary}")
+    if with_lineage and edges is None:
+        edges = lineage.read(ws, catalog, model, p)
+    return make(catalog, names, now or datetime.now(UTC), model, edges)
 
 
 def make(catalog: str, schemas: list[str], taken_at: datetime, model: dict[str, dict],

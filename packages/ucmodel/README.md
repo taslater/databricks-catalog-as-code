@@ -4,7 +4,8 @@ Not affiliated with or endorsed by Databricks.
 
 Reads a Databricks Unity Catalog over REST into a normalised model,
 compiles source DDL into the same model, and compares two models. It needs
-no SQL warehouse. `ucstate` and `ucatlas` are built on it.
+no SQL warehouse, and one makes a snapshot faster. `ucstate` and `ucatlas`
+are built on it.
 
 Its command takes a snapshot of a catalog, a file that is written once and
 never edited, and reports what changed between two snapshots:
@@ -17,7 +18,12 @@ ucmodel diff OLDER.json NEWER.json --format markdown     # or json
 
 `snapshot` reads every schema but `information_schema`, or those named with
 `--schema`, and their lineage unless `--no-lineage`. Reading takes about
-three API calls per table, and lineage one more per table and per column.
+two API calls per table, and lineage one more per table and per column.
+With `--warehouse ID`, tags, grants, functions' names and lineage come from
+five queries for the whole catalog, on `system.information_schema` and the
+`system.access` lineage tables, and only the schemas' lists are read over
+REST. The model is the same either way. A query that fails falls back to
+REST, and says so.
 The file holds a hash of its contents, and `diff` refuses a file that was
 changed after it was taken. It holds what the API returns, owners' names
 included.
@@ -26,6 +32,8 @@ included.
   profile or with `DATABRICKS_*` variables, and never with a profile nobody
   named.
 - `reader.py` reads the raw REST state of some schemas.
+- `bulk.py` reads tags, grants, functions' names and lineage for a whole
+  catalog with queries on a SQL warehouse.
 - `normalise.py` turns that into the model: one dict per object, keyed
   `kind:schema.name`, without the catalog.
 - `compiler.py` turns source DDL into the model a shadow catalog would
@@ -38,7 +46,7 @@ included.
   changed between two. `cli.py` is the `ucmodel` command.
 - `sqltext.py` splits statements, strips catalogs, compares SQL text by
   tokens, and quotes names and strings.
-- `samples/` holds three schemas' raw REST state, so that tests need no
+- `samples/` holds four schemas' raw REST state, so that tests need no
   workspace. Its docstring says how to save them again.
 
 ```python
