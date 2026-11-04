@@ -89,7 +89,7 @@ def _stub(nid: str, catalog_schemas: set[str]) -> dict:
     return {"id": nid, "kind": kind, "schema": schema, "name": name, "comment": comment,
             "grain": None, "tags": {}, "owner": None, "columns": [], "pk": [], "fks": [],
             "definition": None, "writers": [], "changed": None, "created": None,
-            "written": None}
+            "written": None, "uses": None, "pipeline": None}
 
 
 def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
@@ -120,7 +120,7 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
                         for c in obj.get("columns") or []],
             "pk": pk, "fks": fks, "definition": obj.get("definition"), "writers": [],
             "changed": _when(meta.get("updated_at")), "created": _when(meta.get("created_at")),
-            "written": None,
+            "written": None, "uses": None, "pipeline": meta.get("pipeline_id"),
         }
 
     def node(nid: str) -> dict:
@@ -141,7 +141,16 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         tid, col = cid.rsplit(".", 1)
         return tid not in objects or col in {c["name"] for c in nodes[tid]["columns"]}
 
-    sts = sqllineage.statements(model, catalog, sql_files or [], progress)
+    writes = (found.writes if found else None) or []
+    ran: dict[str, dict] = {}  # what query history says of each statement, by its via
+    for w in writes:
+        number = sum(v.startswith(f"history:{w.target}:") for v in ran) + 1
+        ran[f"history:{w.target}:{number}"] = {
+            "target": w.target, "sql": w.sql, "type": w.type, "runs": w.runs, "last": w.last,
+            "by": w.by, "client": w.client, "source": w.source, "of": w.of, "reads": w.reads}
+    sts = sqllineage.statements(model, catalog, sql_files or [], progress,
+                                [(via, r["target"], r["sql"], r["reads"])
+                                 for via, r in ran.items()])
     column_edges: dict[tuple[str, str, str], dict] = {}
     table_edges: dict[tuple[str, str], dict] = {}
     gaps = []
@@ -152,7 +161,8 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         if st.target is None:
             continue
         node(st.target)["writers"].append({"via": st.via, "kind": st.kind, "sql": st.sql,
-                                           "filters": st.filters, "errors": st.errors})
+                                           "filters": st.filters, "errors": st.errors,
+                                           "ran": _ran(ran.get(st.via))})
         for e in st.columns:
             column(e.source)
             key = (e.source, e.target, st.via)
@@ -196,6 +206,14 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
             if target["kind"] in STORED and when:
                 target["written"] = max(target["written"] or "", when)
 
+    for r in ran.values():  # a statement that ran wrote its object, even with no edge
+        wrote = nodes.get(r["target"])
+        if wrote and wrote["kind"] in STORED:
+            wrote["written"] = max(wrote["written"] or "", r["last"])
+    for u in (found.uses if found else None) or []:
+        if u.target in nodes:
+            nodes[u.target]["uses"] = {"queries": u.queries, "people": u.people, "last": u.last}
+
     joins: dict[tuple[str, str], dict] = {}
     for st in sts:
         for a, b in st.joins:
@@ -228,7 +246,8 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         "meta": {"catalog": catalog, "taken_at": taken_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
                  "snapshot": snapshot, "sqlglot": version("sqlglot"),
                  "lineage": found is not None, "sql_files": len(sql_files or []),
-                 "statements": len(sts)},
+                 "statements": len(sts),
+                 "history": found is not None and found.writes is not None},
         "schemas": schemas,
         "nodes": list(nodes.values()),
         "column_edges": list(column_edges.values()),
@@ -236,7 +255,15 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         "fk_edges": fk_edges,
         "joins": sorted(joins.values(), key=lambda j: (j["a"], j["b"])),
         "gaps": gaps,
+        "names": (found.names if found else None) or {},
     }
+
+
+def _ran(r: dict | None) -> dict | None:
+    """What a writer's entry says of a statement from query history: all but its SQL,
+    which the entry has."""
+    return None if r is None else {k: v for k, v in r.items()
+                                   if k not in ("sql", "target", "reads")}
 
 
 def layout_edges(g: dict) -> list[dict]:
