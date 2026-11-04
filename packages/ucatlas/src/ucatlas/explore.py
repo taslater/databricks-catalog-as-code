@@ -9,7 +9,9 @@ data so the page can say which one a fact came from:
   read only to join or filter;
 - what ran: the lineage the platform recorded (`ucmodel.lineage`), with when
   it last saw each edge. It covers writes the SQL files don't, such as
-  notebooks, but not how.
+  notebooks, but not how. With query history, the statements that wrote each
+  object are read as SQL files are, and the queries that read objects together
+  give joins; the jobs they ran from, and each table's size, come with them.
 
 An edge either source names to an object outside the snapshot, in another
 catalog or schema that wasn't read, or files read with `read_files`, gets a
@@ -24,6 +26,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
+from dataclasses import asdict
 from datetime import UTC, datetime
 from importlib.metadata import version
 from importlib.resources import files
@@ -89,7 +92,7 @@ def _stub(nid: str, catalog_schemas: set[str]) -> dict:
     return {"id": nid, "kind": kind, "schema": schema, "name": name, "comment": comment,
             "grain": None, "tags": {}, "owner": None, "columns": [], "pk": [], "fks": [],
             "definition": None, "writers": [], "changed": None, "created": None,
-            "written": None, "uses": None, "pipeline": None}
+            "written": None, "uses": None, "pipeline": None, "size": None}
 
 
 def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
@@ -120,7 +123,7 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
                         for c in obj.get("columns") or []],
             "pk": pk, "fks": fks, "definition": obj.get("definition"), "writers": [],
             "changed": _when(meta.get("updated_at")), "created": _when(meta.get("created_at")),
-            "written": None, "uses": None, "pipeline": meta.get("pipeline_id"),
+            "written": None, "uses": None, "pipeline": meta.get("pipeline_id"), "size": None,
         }
 
     def node(nid: str) -> dict:
@@ -162,7 +165,7 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
             continue
         node(st.target)["writers"].append({"via": st.via, "kind": st.kind, "sql": st.sql,
                                            "filters": st.filters, "errors": st.errors,
-                                           "ran": _ran(ran.get(st.via))})
+                                           "reads": sorted(st.reads), "ran": _ran(ran.get(st.via))})
         for e in st.columns:
             column(e.source)
             key = (e.source, e.target, st.via)
@@ -213,13 +216,29 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
     for u in (found.uses if found else None) or []:
         if u.target in nodes:
             nodes[u.target]["uses"] = {"queries": u.queries, "people": u.people, "last": u.last}
+    for z in (found.sizes if found else None) or []:
+        if z.target in nodes:
+            nodes[z.target]["size"] = {"bytes": z.bytes, "files": z.files, "on": z.on,
+                                       "history": [list(p) for p in z.history]}
 
     joins: dict[tuple[str, str], dict] = {}
+
+    def joined(a: str, b: str, via: str) -> None:
+        j = joins.setdefault((a, b), {"a": a, "b": b, "code": [], "declared": None})
+        if via not in j["code"]:
+            j["code"].append(via)
     for st in sts:
         for a, b in st.joins:
-            j = joins.setdefault((a, b), {"a": a, "b": b, "code": [], "declared": None})
-            if st.via not in j["code"]:
-                j["code"].append(st.via)
+            joined(a, b, st.via)
+    queries: dict[str, dict] = {}  # the queries that read objects together, by their via
+    for i, q in enumerate((found.queries if found else None) or [], 1):
+        pairs = sqllineage.query_joins(q.sql, model, catalog)
+        queries[f"query:{i}"] = {"sql": q.sql, "tables": q.tables, "runs": q.runs,
+                                 "people": q.people, "last": q.last, "read": pairs is not None}
+        for a, b in pairs or []:
+            column(a)
+            column(b)
+            joined(a, b, f"query:{i}")
     fk_edges = []
     for n in list(nodes.values()):
         for fk in n["fks"]:
@@ -247,7 +266,8 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
                  "snapshot": snapshot, "sqlglot": version("sqlglot"),
                  "lineage": found is not None, "sql_files": len(sql_files or []),
                  "statements": len(sts),
-                 "history": found is not None and found.writes is not None},
+                 "history": found is not None and found.writes is not None,
+                 "sizes": found is not None and found.sizes is not None},
         "schemas": schemas,
         "nodes": list(nodes.values()),
         "column_edges": list(column_edges.values()),
@@ -256,6 +276,8 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         "joins": sorted(joins.values(), key=lambda j: (j["a"], j["b"])),
         "gaps": gaps,
         "names": (found.names if found else None) or {},
+        "queries": queries,
+        "jobs": {j.id: [asdict(t) for t in j.tasks] for j in (found.jobs if found else None) or []},
     }
 
 

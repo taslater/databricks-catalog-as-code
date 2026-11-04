@@ -156,9 +156,12 @@ uv run ucatlas explore --snapshot snapshots/NEWER.json --sql jobs/ -o explorer
   lineage. `--warehouse ID` reads tags, grants, functions' names and lineage
   with five queries on that SQL warehouse; it reads the same model, and
   falls back to REST for what it can't query. It also reads, from query
-  history, the statements that wrote each object and how often each was
-  read, which the explorer shows; `--no-history` skips that. Such a
-  snapshot holds that SQL, with any values written in it, and who ran it.
+  history, the statements that wrote each object, how often each was
+  read, the queries that join objects, and the jobs the statements ran
+  from, with their tasks; and each table's size from the storage metrics.
+  The explorer shows them all; `--no-history` skips query history. Such a
+  snapshot holds that SQL, with any values written in it, who ran it, and
+  the paths of the jobs' notebooks and files.
   It never replaces a file. A snapshot holds what the API returns,
   owners' names included, so keep it where the catalog's metadata may go:
   this repository ignores `snapshots/`.

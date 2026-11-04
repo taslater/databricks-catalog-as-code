@@ -16,12 +16,16 @@ Two kinds of edge are left out:
 
 A snapshot keeps what `read` found, as `to_json` writes it. A snapshot read
 with a warehouse can also hold, from query history, the statements that wrote
-each object (`Write`) and how often each was read (`Use`); `bulk` reads them.
+each object (`Write`), how often each was read (`Use`), the queries that read
+two or more objects (`Query`), the jobs the writes ran from (`Job`), and, from
+the storage metrics, how much each table holds (`Size`); `bulk` reads them.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass, field
+from typing import Any
 
 from .model import tabular
 from .progress import Progress
@@ -62,6 +66,43 @@ class Use:
     last: str
 
 
+@dataclass(frozen=True)
+class Query:
+    """A query that read two or more objects, at least one of the model's, and wrote
+    nothing, as query history has it: one per text. Its joins say how they go together."""
+    sql: str
+    tables: list[str]  # the objects it read, named as edges name them, sorted
+    runs: int
+    people: int  # how many people ran it
+    last: str
+
+
+@dataclass(frozen=True)
+class Size:
+    """How much a table holds, from the storage system table's daily metrics."""
+    target: str
+    bytes: int  # in the table's current version, not counting files kept for time travel
+    files: int
+    on: str  # the day of the latest metrics, `2026-11-04`
+    # (day, bytes) on the first day `bulk` reads, on each day the size changed, and on `on`
+    history: list[tuple[str, int]]
+
+
+@dataclass(frozen=True)
+class Task:
+    """One task of a job, as the jobs API defines it now."""
+    key: str
+    depends_on: list[str]  # the keys of the tasks it waits for
+    runs: str  # `notebook`, `sql_file`, `sql_query`, `python`, `pipeline`, `job`...
+    path: str | None  # the notebook's or file's path, or the query's, pipeline's or job's id
+
+
+@dataclass(frozen=True)
+class Job:
+    id: str
+    tasks: list[Task]
+
+
 @dataclass
 class Lineage:
     tables: list[Edge] = field(default_factory=list)
@@ -71,6 +112,9 @@ class Lineage:
     # the names of the jobs and pipelines the writes and the model name by id, keyed
     # `job:<id>` and `pipeline:<id>`; None when they weren't looked up
     names: dict[str, str] | None = None
+    queries: list[Query] | None = None  # None when query history wasn't read
+    sizes: list[Size] | None = None  # None when the storage metrics weren't read
+    jobs: list[Job] | None = None  # the jobs the writes ran from; None when not read
 
     def upstream_columns(self, column: str) -> list[Edge]:
         return [e for e in self.columns if e.target == column]
@@ -86,14 +130,21 @@ class Lineage:
             out["uses"] = [asdict(u) for u in self.uses]
         if self.names is not None:
             out["names"] = dict(sorted(self.names.items()))
+        for key in ("queries", "sizes", "jobs"):
+            if (found := getattr(self, key)) is not None:
+                out[key] = [asdict(x) for x in found]
         return out
 
     @classmethod
     def from_json(cls, data: dict) -> Lineage:
-        writes, uses = data.get("writes"), data.get("uses")
+        def each(key: str, make: Callable[[dict], Any]) -> list | None:
+            return None if data.get(key) is None else [make(x) for x in data[key]]
         return cls([Edge(*e) for e in data["tables"]], [Edge(*e) for e in data["columns"]],
-                   None if writes is None else [Write(**w) for w in writes],
-                   None if uses is None else [Use(**u) for u in uses], data.get("names"))
+                   each("writes", lambda w: Write(**w)), each("uses", lambda u: Use(**u)),
+                   data.get("names"), each("queries", lambda q: Query(**q)),
+                   each("sizes", lambda z: Size(**{**z, "history": [tuple(p) for p in
+                                                                    z["history"]]})),
+                   each("jobs", lambda j: Job(j["id"], [Task(**t) for t in j["tasks"]])))
 
 
 def read(ws: Workspace, catalog: str, model: dict[str, dict],

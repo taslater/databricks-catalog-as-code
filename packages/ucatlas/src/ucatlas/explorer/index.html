@@ -72,6 +72,8 @@
   table.cols tr.click { cursor:pointer; } table.cols tr.click:hover { background:#f0f6ff; }
   code, pre { font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
   pre { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px; white-space:pre-wrap; word-break:break-word; margin:4px 0; }
+  .jobgroup { border-left:2px solid var(--line); padding-left:10px; margin:6px 0; } .jobhead { font-weight:600; margin-bottom:2px; }
+  .joined { margin:4px 0; } .spark { display:block; margin-top:2px; }
   .hop { border-left:2px solid var(--up); padding:2px 0 2px 10px; margin:4px 0; } .hop.down { border-color:var(--down); }
   .hop .expr { font-family:ui-monospace, Menlo, monospace; font-size:12px; background:#eef4ff; padding:1px 4px; border-radius:3px; }
   .finding { border-left:3px solid var(--accent); padding:4px 10px; margin:6px 0; background:#f6f8fa; }
@@ -172,14 +174,43 @@ const RAN = new Map(G.nodes.flatMap(n => n.writers.filter(w => w.ran).map(w => [
 const times = n => `${fmt(n)} time${n === 1 ? "" : "s"}`;
 // a job's or a pipeline's name, when the snapshot has it, else its id
 const named = (kind, id) => G.names[`${kind}:${id}`] ? `“${G.names[`${kind}:${id}`]}”` : id;
-// where a statement from query history last ran from, as its ids say
-function ranFrom(r) {
-  const s = r.source, ids = [
-    s.job_id && `job ${named("job", s.job_id)}${s.job_run_id ? ", run " + s.job_run_id : ""}`, s.pipeline_id && `pipeline ${named("pipeline", s.pipeline_id)}`,
-    s.notebook_id && `notebook ${s.notebook_id}`, s.dashboard_id && `dashboard ${s.dashboard_id}`,
-    s.legacy_dashboard_id && `dashboard ${s.legacy_dashboard_id}`, s.sql_query_id && `saved query ${s.sql_query_id}`,
-    s.alert_id && `alert ${s.alert_id}`, s.genie_space_id && `Genie space ${s.genie_space_id}`].filter(Boolean);
-  return [r.client, ...ids].filter(Boolean).map(esc).join(", ");
+// the queries from query history that read objects together, by their via, and each job's tasks
+const QUERY = new Map(Object.entries(G.queries || {}));
+const JOBS = G.jobs || {};
+const jobLink = id => `<a href="#" data-job="${esc(id)}">job ${esc(named("job", id))}</a>`;
+const taskOf = s => (JOBS[s.job_id] || []).find(t => t.key === s.task_key);
+const RUNS_WORD = { notebook:"notebook", sql_file:"SQL file", sql_query:"saved query", python:"Python file", wheel:"wheel", jar:"JAR",
+  pipeline:"pipeline", job:"job", dbt:"dbt project", dashboard:"dashboard", alert:"alert", condition:"condition", for_each:"loop" };
+const tail = p => p.includes("/") ? "…/" + p.split("/").slice(-2).join("/") : p; // a path's folder and file
+// what a task runs: a notebook's or a file's path, shortened (the whole path is its tooltip), or a pipeline by name
+function runsText(t) {
+  if (!t.path) return RUNS_WORD[t.runs] || "";
+  const what = t.runs === "pipeline" ? esc(named("pipeline", t.path)) : t.runs === "job" ? esc(named("job", t.path)) : `<code title="${esc(t.path)}">${esc(tail(t.path))}</code>`;
+  return `${RUNS_WORD[t.runs] || esc(t.runs)} ${what}`;
+}
+// where a statement from query history last ran from, as its ids say; in a job, the task and what it runs
+function ranFrom(r, withJob = true) {
+  const s = r.source, t = s.task_key && taskOf(s);
+  const ids = [
+    s.job_id && [withJob && jobLink(s.job_id), s.task_key && `task <b>${esc(s.task_key)}</b>`, s.job_run_id && "run " + esc(s.job_run_id)].filter(Boolean).join(", "),
+    s.pipeline_id && `pipeline ${esc(named("pipeline", s.pipeline_id))}`,
+    t && t.path ? runsText(t) : s.notebook_id && `notebook ${esc(s.notebook_id)}`, s.dashboard_id && `dashboard ${esc(s.dashboard_id)}`,
+    s.legacy_dashboard_id && `dashboard ${esc(s.legacy_dashboard_id)}`, s.sql_query_id && `saved query ${esc(s.sql_query_id)}`,
+    s.alert_id && `alert ${esc(s.alert_id)}`, s.genie_space_id && `Genie space ${esc(s.genie_space_id)}`];
+  return [r.client && esc(r.client), ...ids].filter(Boolean).join(", ");
+}
+// a size in bytes, as `1.2 MB`
+const bytes = n => { const u = ["B", "kB", "MB", "GB", "TB", "PB"]; let i = 0, x = n;
+  while (x >= 1000 && i < u.length - 1) { x /= 1000; i++; } return `${i ? x.toFixed(x < 10 ? 1 : 0) : x} ${u[i]}`; };
+// a size's history as a small step chart: one point a day the size changed
+function spark(history) {
+  if (history.length < 2) return "";
+  const W = 170, H = 30, t = history.map(([d]) => Date.parse(d)), v = history.map(([, b]) => b);
+  const t0 = Math.min(...t), t1 = Math.max(...t), lo = Math.min(...v), hi = Math.max(...v);
+  const x = d => 2 + (W - 4) * (t1 > t0 ? (d - t0) / (t1 - t0) : 0), y = b => H - 3 - (H - 6) * (hi > lo ? (b - lo) / (hi - lo) : .5);
+  const pts = history.map(([d, b], i) => i ? `H${x(Date.parse(d)).toFixed(1)}V${y(b).toFixed(1)}` : `M${x(t[0]).toFixed(1)},${y(b).toFixed(1)}`).join("");
+  return `<svg class="spark" width="${W}" height="${H}"><path d="${pts}" fill="none" stroke="#8250df" stroke-width="1.5"/></svg>
+    <div class="sub" style="display:flex;justify-content:space-between;width:${W}px;font-size:10.5px"><span>${esc(history[0][0])}</span><span>${esc(history[history.length - 1][0])}</span></div>`;
 }
 // each kind of object in the catalog: its icon, what it is called, and whether it holds data, as a
 // table does (the lineage says when it was last written), or is computed when it is read
@@ -292,7 +323,7 @@ const state = {
   include:{ files:true, views:true, outside:true }, schemas:new Set(schemaNames), hidden:new Set(), extra:new Set(),
   arrange:"layered", direction:"right", group:false, color:"schema", highlight:"direct",
   history:[], compare:[],
-  mapColor:"schema", mapHighlight:"lineage", route:null, query:"",
+  mapColor:"schema", mapHighlight:"lineage", route:null, query:"", job:null, // the job whose panel is open
   mapLevel:null, mapSchema:null, selSchema:null, // the map's level (decided on first visit), the schema it is zoomed to, the schema selected
 };
 
@@ -373,6 +404,14 @@ function colorKey(mode) {
   if (mode === "written") return Object.entries(AGE).map(([k, v]) => `<span><i class="swatch" style="background:${v};border:1px solid #d0d7de"></i>${AGE_TEXT[k]}</span>`).join("")
     + `<span>${G.meta.lineage ? `the latest write the lineage recorded, before the snapshot (${when(G.meta.taken_at)})` : "the snapshot has no lineage, so no writes are known"}</span>`;
   if (mode === "schema") return `<span>A tint of each schema's color, as listed under Include</span>`;
+  if (mode === "reads") { if (!G.meta.history) return `<span>the snapshot has no query history, so reads aren't known: take it with a warehouse</span>`;
+    const unread = G.nodes.filter(n => inCatalog(n) && !n.uses).length;
+    return stepKey(READS, readSteps(), x => `${fmt(x)} quer${x === 1 ? "y" : "ies"}`, true) + `<span><i class="swatch" style="background:${NONE}"></i>none (${unread})</span>`
+      + `<span>queries that only read it, in the 90 days before the snapshot; one that reads it to write another object is a downstream edge instead</span>`; }
+  if (mode === "size") { if (!G.meta.sizes) return `<span>the snapshot has no sizes: take it with a warehouse</span>`;
+    const none = G.nodes.filter(n => stored(n) && !n.size).length;
+    return stepKey(SIZES, sizeSteps(), bytes, false) + `<span><i class="swatch" style="background:${NONE}"></i>no size yet (${none})</span>`
+      + `<span>data in its current version, from the latest daily storage metrics; views hold none</span>`; }
   return `<span>Plain cards; the left edge still shows the schema</span>`;
 }
 function bindView(root) {
@@ -419,7 +458,7 @@ function viewExplore(hiddenCount) {
       ${field("Direction", seg("direction", [["right", "Left to right"], ["down", "Top to bottom"]], state.direction, state.arrange === "free"))}
       <div class="${state.arrange === "free" ? "dim" : ""}">${check("group", state.group, "Group tables by schema")}</div>
       <div class="sub" style="margin-top:6px">The whole catalog is laid out when the site is built, and every view keeps that order, so tables stay where you saw them as the view changes. The crossing count is at the bottom left.</div></section>
-    <section><h4>Color</h4>${field("Fill tables by", `<select data-select="color">${[["schema", "Schema"], ["written", "Last written"], ["none", "Nothing"]].map(([v, t]) => `<option value="${v}" ${state.color === v ? "selected" : ""}>${t}</option>`).join("")}</select><div class="key">${colorKey(state.color)}</div>`)}</section>
+    <section><h4>Color</h4>${field("Fill tables by", `<select data-select="color">${[["schema", "Schema"], ["written", "Last written"], ["reads", "Read by queries"], ["size", "Size"], ["none", "Nothing"]].map(([v, t]) => `<option value="${v}" ${state.color === v ? "selected" : ""}>${t}</option>`).join("")}</select><div class="key">${colorKey(state.color)}</div>`)}</section>
     <section><h4>Selection</h4>${field("Clicking a table highlights", seg("highlight", [["direct", "Its edges"], ["lineage", "All up & downstream"]], state.highlight))}
       <div class="key"><span>${lineKey("hl-up")} upstream</span><span>${lineKey("hl-down")} downstream</span></div></section>`;
   bindView($("#view"));
@@ -635,13 +674,42 @@ function viaText(via) {
   if (via === "lineage") return "the platform's lineage";
   const r = RAN.get(via);
   if (r) return `<b>${esc(r.type)}</b> from query history, last run ${when(r.last)}`;
+  const q = QUERY.get(via);
+  if (q) return `<b>a query</b> run ${times(q.runs)} by ${fmt(q.people)} ${q.people === 1 ? "person" : "people"}, last ${when(q.last)}`;
   const m = /^(.*\.sql):(\d+)$/.exec(via);
   if (m) return `<b>${esc(m[1])}</b>, statement ${m[2]}`;
   return inCatalog(byId.get(via)) ? `the definition of <b>${esc(via)}</b>` : `<b>${esc(via)}</b>`;
 }
 const gapped = n => n.writers.some(w => w.errors.length);
+// how much an object is read, and how much a table holds, as a fill: four steps on a log scale
+const READS = ["#ddf4ff", "#b6e3ff", "#80ccff", "#54aeff"], SIZES = ["#fbefff", "#ecd8ff", "#d8b9ff", "#c297ff"], NONE = "#eaeef2";
+// the bounds between up to four equal steps from the least to the most, on a log scale; for counts,
+// whole numbers, so two steps never meet at the same count
+function steps(values, whole) {
+  const v = values.filter(x => x > 0); if (!v.length) return [];
+  const lo = Math.log(Math.min(...v)), hi = Math.log(Math.max(...v)); if (hi <= lo) return [];
+  const b = [1, 2, 3].map(i => Math.exp(lo + (hi - lo) * i / 4)).map(x => whole ? Math.floor(x) : x);
+  return [...new Set(b)].filter(x => !whole || (x >= Math.min(...v) && x < Math.max(...v)));
+}
+const stepOf = (x, b) => b.filter(t => x > t).length;
+const colorAt = (colors, i, b) => colors[b.length ? Math.round(i * (colors.length - 1) / b.length) : 0];
+let readBounds = null, sizeBounds = null;
+const readSteps = () => readBounds ??= steps(G.nodes.filter(inCatalog).map(n => n.uses?.queries || 0), true);
+const sizeSteps = () => sizeBounds ??= steps(G.nodes.filter(stored).map(n => n.size?.bytes || 0), false);
+const readFill = n => !G.meta.history || !inCatalog(n) ? "#fff" : n.uses ? colorAt(READS, stepOf(n.uses.queries, readSteps()), readSteps()) : NONE;
+const sizeFill = n => !stored(n) ? "#fff" : n.size ? colorAt(SIZES, stepOf(n.size.bytes, sizeSteps()), sizeSteps()) : NONE;
+// a swatch for each step: `up to 1.1 kB`, `to 1.4 kB`, `over 1.6 kB`; for counts, `1`, `2 to 4`, `5 or more`
+function stepKey(colors, b, f, whole) {
+  const sw = (i, text) => `<span><i class="swatch" style="background:${colorAt(colors, i, b)}"></i>${text}</span>`;
+  if (!b.length) return sw(0, "any");
+  if (!whole) return [sw(0, "up to " + f(b[0])), ...b.slice(1).map((x, i) => sw(i + 1, "to " + f(x))), sw(b.length, "over " + f(b[b.length - 1]))].join("");
+  const from = i => i ? b[i - 1] + 1 : 1;
+  return [...b.map((x, i) => sw(i, from(i) === x ? f(x) : `${from(i)} to ${f(x)}`)), sw(b.length, `${f(b[b.length - 1] + 1)} or more`)].join("");
+}
 function fillFor(n, mode) {
   if (mode === "written") return AGE[age(n)];
+  if (mode === "reads") return readFill(n);
+  if (mode === "size") return sizeFill(n);
   if (mode === "schema") return d3.color(schemaColor(n.schema)).copy({ opacity:.12 }).formatRgb();
   return "#fff";
 }
@@ -797,7 +865,7 @@ async function renderExplore() {
   } else highlight(state.lit ? state.selected : null, state.highlight);
   $("#hint").innerHTML = (trace ? `Tracing <b>${esc(short(state.column))}</b>: blue feeds it, purple is fed by it · click the background to stop · `
     : `${ids.size} tables · ${state.lit ? "click the background to clear the highlight" : "click a table to highlight its edges"} · `) + crossingNote(L);
-  svg.on("click", ev => { if (ev.target !== svg.node()) return; if (state.column) { state.column = null; state.panel = null; renderExplore(); } else { state.selected = null; state.lit = false; highlight(null); renderPanel(); } });
+  svg.on("click", ev => { if (ev.target !== svg.node()) return; if (state.column) { state.column = null; state.panel = null; renderExplore(); } else { state.selected = null; state.lit = false; state.panel = null; highlight(null); renderPanel(); } });
   fit(L.width, L.height);
   renderPanel();
 }
@@ -811,6 +879,7 @@ function select(id) {
 // ---------------------------------------------------------------- the side panel
 function renderPanel() {
   if (state.panel === "gaps") return panelGaps();
+  if (state.panel === "job" && state.job) return panelJob(state.job);
   if (state.panel === "column" && state.column) return panelColumn(state.column);
   if (state.mode === "map" && state.route) return panelRoute();
   if (state.mode === "map" && state.mapLevel === "schemas" && state.selSchema) return panelSchema(state.selSchema);
@@ -822,6 +891,7 @@ const link = id => byId.has(id) ? `<a href="#" data-goto="${esc(id)}"><code>${es
 function wirePanel() {
   const p = $("#panel");
   p.querySelectorAll("[data-goto]").forEach(a => a.onclick = ev => { ev.preventDefault(); focusOn(a.dataset.goto); });
+  p.querySelectorAll("[data-job]").forEach(a => a.onclick = ev => { ev.preventDefault(); openJob(a.dataset.job); });
   p.querySelectorAll("[data-col]").forEach(r => r.onclick = () => focusOn(tableOf(r.dataset.col), r.dataset.col));
   p.querySelectorAll("[data-act]").forEach(b => b.onclick = () => {
     const id = b.dataset.id, a = b.dataset.act;
@@ -852,6 +922,101 @@ function moreRan(n) {
   const kept = n.writers.filter(w => w.ran), of = kept.length ? Math.max(...kept.map(w => w.ran.of)) : 0;
   return of > kept.length ? `<p class="sub">Query history has ${of - kept.length} more statement${of - kept.length === 1 ? "" : "s"} that wrote it; the snapshot keeps the latest ${kept.length}.</p>` : "";
 }
+// a statement that writes an object, with what query history says of it
+function writerHtml(w, withJob) {
+  const from = w.ran && ranFrom(w.ran, withJob);
+  return `<p>${viaText(w.via)}${w.ran ? `<br><span class="sub">ran ${times(w.ran.runs)} in the last 90 days; last by ${esc(w.ran.by || "someone")}${from ? ", from " + from : ""}</span>` : ""}</p>
+    ${w.filters.length ? `<p>Rows arrive only where ${w.filters.map(f => `<code>${esc(f)}</code>`).join(" and ")}</p>` : ""}<details><summary>SQL</summary><pre>${esc(w.sql)}</pre></details>`;
+}
+// an object's writers, those from one job together under it
+function writersHtml(n) {
+  const groups = new Map();
+  n.writers.forEach(w => push(groups, w.ran?.source?.job_id || "", w));
+  return [...groups].map(([job, ws]) => job
+    ? `<div class="jobgroup"><div class="jobhead">${jobLink(job)} <span class="sub">· ${ws.length} statement${ws.length === 1 ? "" : "s"}</span></div>${ws.map(w => writerHtml(w, false)).join("")}</div>`
+    : ws.map(w => writerHtml(w, true)).join("")).join("");
+}
+// the tables an object is joined with, and on what: declared keys, the SQL read here, and queries that ran
+function joinsOf(id) {
+  const by = new Map();
+  G.joins.forEach(j => { const ta = tableOf(j.a), tb = tableOf(j.b); if (ta === tb || (ta !== id && tb !== id)) return;
+    const [here, there] = ta === id ? [j.a, j.b] : [j.b, j.a]; push(by, tableOf(there), { here, there, j }); });
+  return by;
+}
+function joinedHtml(id) {
+  const by = joinsOf(id);
+  const weight = js => js.reduce((w, { j }) => w + (j.declared ? 1000 : 0) + j.code.reduce((c, v) => c + (QUERY.get(v)?.runs || 1), 0), 0);
+  const said = js => { const declared = js.filter(x => x.j.declared).map(x => x.j.declared), vias = [...new Set(js.flatMap(x => x.j.code))];
+    const qs = vias.filter(v => QUERY.has(v)), sts = vias.length - qs.length, runs = qs.reduce((c, v) => c + QUERY.get(v).runs, 0);
+    return [declared.length && "declared key " + declared.map(esc).join(", "), sts && `in ${sts} statement${sts === 1 ? "" : "s"} that write`,
+      qs.length && `in ${qs.length} quer${qs.length === 1 ? "y" : "ies"} run ${times(runs)}`].filter(Boolean).join(" · "); };
+  const rows = [...by].sort((a, b) => weight(b[1]) - weight(a[1]) || a[0].localeCompare(b[0]));
+  return `<h3>Joined with (${by.size})</h3>${rows.map(([t, js]) => `<div class="joined">↔ ${link(t)} <span class="sub">on</span> ${[...new Set(js.map(x => `${colName(x.here)} = ${colName(x.there)}`))].map(c => `<code>${esc(c)}</code>`).join(", ")}<br><span class="sub">${said(js)}</span></div>`).join("")
+    || `<p class="sub">No join to it in its declared keys, the SQL read here${G.meta.history ? " or the queries in query history" : ""}.</p>`}`;
+}
+function sizeHtml(n) {
+  const z = n.size;
+  if (!z) return `<p><span class="status unseen">no size in the storage metrics</span><br><span class="sub">They have each table's size once a day, so a table created since has none yet.</span></p>`;
+  const [d0, b0] = z.history[0];
+  const change = b0 !== z.bytes ? `<br><span class="sub">${z.bytes > b0 ? "up" : "down"} from ${bytes(b0)} on ${esc(d0)}${b0 ? ` (${z.bytes > b0 ? "+" : ""}${Math.round(100 * (z.bytes - b0) / b0)}%)` : ""}</span>`
+    : `<br><span class="sub">the same since ${esc(d0)}</span>`;
+  return `<p><b>${bytes(z.bytes)}</b> in ${fmt(z.files)} file${z.files === 1 ? "" : "s"}, on ${esc(z.on)}${change}</p>${spark(z.history)}`;
+}
+
+// ---------------------------------------------------------------- jobs
+// every job a statement in the snapshot ran from, by its id
+const JOB_IDS = [...new Set([...Object.keys(JOBS), ...G.nodes.flatMap(n => n.writers.map(w => w.ran?.source?.job_id).filter(Boolean))])].sort((a, b) => named("job", a).localeCompare(named("job", b)));
+function jobWriters(id) { // the statements that ran in a job, each with the object it wrote
+  return G.nodes.flatMap(n => n.writers.filter(w => w.ran?.source?.job_id === id).map(w => ({ ...w, target:n.id })));
+}
+function ordered(tasks) { // the tasks, each after those it waits for
+  const keys = new Set(tasks.map(t => t.key)), done = new Set(), out = []; let left = [...tasks];
+  while (left.length) { const ready = left.filter(t => t.depends_on.every(d => done.has(d) || !keys.has(d)));
+    (ready.length ? ready : [left[0]]).forEach(t => { out.push(t); done.add(t.key); }); left = left.filter(t => !done.has(t.key)); }
+  return out;
+}
+function jobObjects(id) { // what a job writes, reads, and refreshes through its pipeline tasks
+  const ws = jobWriters(id), wrote = new Set(ws.map(w => w.target)), read = new Set(ws.flatMap(w => w.reads || []));
+  const refreshed = new Set((JOBS[id] || []).filter(t => t.runs === "pipeline").flatMap(t => G.nodes.filter(n => n.pipeline === t.path).map(n => n.id)));
+  return { ws, wrote, read, refreshed };
+}
+function openJob(id) { state.panel = "job"; state.job = id; renderPanel(); }
+function highlightJob(id) { // its statements' edges, and the objects at their ends
+  if (!drawn) return;
+  const { ws, wrote, read, refreshed } = jobObjects(id), ids = new Set([...wrote, ...read, ...refreshed]);
+  const pairs = new Set(ws.flatMap(w => (w.reads || []).map(r => r + "|" + w.target)));
+  drawn.edges.forEach(({ e, el, base }) => { const cls = pairs.has(e.s + "|" + e.t) ? base + " hl-down" : base + " faded"; el.attr("class", cls).attr("marker-end", markerFor(cls)); });
+  drawn.nodes.forEach((g, nid) => g.classed("faded", !ids.has(nid)).classed("sel", wrote.has(nid) || refreshed.has(nid)));
+}
+function panelJob(id) {
+  const tasks = JOBS[id], { ws, wrote, read, refreshed } = jobObjects(id);
+  const keyed = new Set((tasks || []).map(t => t.key));
+  const shown = [...(tasks ? ordered(tasks) : []), ...[...new Set(ws.map(w => w.ran.source.task_key || ""))].filter(k => !keyed.has(k)).map(k => ({ key:k, depends_on:[], runs:"other", path:null, unknown:true }))];
+  const ofTask = k => ws.filter(w => (w.ran.source.task_key || "") === k);
+  const step = w => `<div style="margin-top:3px">${esc(w.ran.type)} → ${link(w.target)}${w.reads?.length ? ` <span class="sub">from</span> ${w.reads.map(link).join(", ")}` : ""}
+    <br><span class="sub">ran ${times(w.ran.runs)}, last ${when(w.ran.last)} by ${esc(w.ran.by || "someone")}</span></div>`;
+  const task = t => { const mine = ofTask(t.key), pipes = t.runs === "pipeline" ? G.nodes.filter(n => n.pipeline === t.path) : [];
+    return `<div class="hop down"><b>${t.key ? esc(t.key) : "a task the snapshot doesn't name"}</b>${t.unknown ? "" : ` <span class="sub">· ${runsText(t) || "a task"}</span>`}
+      ${t.depends_on.length ? `<br><span class="sub">after ${t.depends_on.map(esc).join(", ")}</span>` : ""}
+      ${mine.map(step).join("")}${pipes.map(n => `<div style="margin-top:3px">refreshes ${link(n.id)}</div>`).join("")}
+      ${!mine.length && !pipes.length ? `<br><span class="sub">no statement from it in query history${t.runs === "pipeline" ? "; a pipeline's refreshes have none" : ""}</span>` : ""}</div>`; };
+  $("#panel").innerHTML = `<h2>Job ${esc(named("job", id))}</h2><div class="sub">job ${esc(id)} · ${tasks ? `${tasks.length} task${tasks.length === 1 ? "" : "s"}` : "its tasks aren't in the snapshot"}</div>
+    <p>It writes ${wrote.size + refreshed.size} object${wrote.size + refreshed.size === 1 ? "" : "s"} and reads ${read.size}, by the statements query history has from it${refreshed.size ? " and the pipelines it runs" : ""}. They are highlighted ${state.mode === "map" ? "on the map" : "where they are drawn"}.</p>
+    ${state.mode === "explore" ? `<p><button class="btn" id="job-show">Show them all</button></p>` : ""}
+    <h3>Tasks, in order</h3>${shown.map(task).join("") || `<p class="sub">None known.</p>`}
+    <h3>Writes</h3>${[...wrote, ...refreshed].map(t => `<div>→ ${link(t)}</div>`).join("") || `<p class="sub">Nothing.</p>`}
+    <h3>Reads</h3>${[...read].sort().map(t => `<div>← ${link(t)}</div>`).join("") || `<p class="sub">Nothing.</p>`}
+    <p class="sub">Query history keeps a statement's text with where it last ran from, so a statement that also runs elsewhere may show under one source only.</p>`;
+  wirePanel();
+  if ($("#job-show")) $("#job-show").onclick = () => { const first = [...wrote, ...refreshed][0]; if (!first) return;
+    state.focus = first; state.selected = null; state.extra = new Set([...wrote, ...read, ...refreshed]); renderExplore(); };
+  highlightJob(id);
+  if (state.mode === "map" && state.mapLevel === "tables") { // zoom to its objects
+    const box = boundsOf([...wrote, ...read, ...refreshed].map(t => mapPos.get(t)).filter(Boolean));
+    if (box) fit(box.w, box.h, 160, box.x, box.y);
+  }
+}
+
 function panelNode(id) {
   const n = byId.get(id); if (!n) return;
   const tags = Object.entries(n.tags).map(([k, v]) => `<span class="chip ${k === "certified" ? "cert" : ""}">${esc(k)}${v === "true" ? "" : ": " + esc(v)}</span>`).join("");
@@ -871,10 +1036,11 @@ function panelNode(id) {
       const key = n.pk.includes(c.name) ? "PK" : n.fks.some(f => f.columns.includes(c.name)) ? "FK" : "";
       return `<tr class="click" data-col="${esc(id + "." + c.name)}"><td style="color:#9a6700">${key}</td><td><b>${esc(c.name)}</b>${Object.entries(c.tags).map(([k, v]) => ` <span class="chip pii">${esc(k)}: ${esc(v)}</span>`).join("")}<br><span class="sub">${esc(c.comment || "")}</span></td><td class="sub">${esc(c.type)}</td></tr>`; }).join("")}</table>` : ""}
     ${n.pipeline ? `<h3>Refreshed by</h3><p>pipeline ${esc(named("pipeline", n.pipeline))}</p>` : ""}
-    ${n.writers.length || seenOnly.length ? `<h3>Written by</h3>${n.writers.map(w => `<p>${viaText(w.via)}${w.ran ? `<br><span class="sub">ran ${times(w.ran.runs)} in the last 90 days; last by ${esc(w.ran.by || "someone")}${ranFrom(w.ran) ? ", from " + ranFrom(w.ran) : ""}</span>` : ""}</p>
-      ${w.filters.length ? `<p>Rows arrive only where ${w.filters.map(f => `<code>${esc(f)}</code>`).join(" and ")}</p>` : ""}<details><summary>SQL</summary><pre>${esc(w.sql)}</pre></details>`).join("")}
+    ${n.writers.length || seenOnly.length ? `<h3>Written by</h3>${writersHtml(n)}
       ${seenOnly.length ? `<p class="sub">The lineage also saw it written from ${seenOnly.map(e => link(e.s)).join(", ")}, by something whose SQL wasn't read here.</p>` : ""}
       ${moreRan(n)}` : ""}
+    ${inside ? joinedHtml(id) : ""}
+    ${G.meta.sizes && stored(n) ? `<h3>Size</h3>${sizeHtml(n)}` : ""}
     ${G.meta.history && inside ? `<h3>Read by</h3><p>${n.uses ? `${fmt(n.uses.queries)} quer${n.uses.queries === 1 ? "y" : "ies"} by ${fmt(n.uses.people)} ${n.uses.people === 1 ? "person" : "people"} in the last 90 days, the last ${when(n.uses.last)}` : `<span class="status unseen">no query read it in the last 90 days</span>`}</p>
       <p class="sub">Queries that only read, as the lineage recorded them; a statement that reads it to write another object is upstream of that object instead.</p>` : ""}
     ${inside ? `<h3>Last written</h3><p>${written(n)}</p>
@@ -901,6 +1067,13 @@ function panelColumn(cid) {
 
 // ---------------------------------------------------------------- map
 const MW = 180, MH = 34;
+let mapPos = new Map(); // where the map drew each object, for zooming to a job's
+// a map card's second line: what its fill shows, or its grain
+function mapLine(n) {
+  if (state.mapColor === "reads" && G.meta.history) return n.uses ? `${fmt(n.uses.queries)} quer${n.uses.queries === 1 ? "y" : "ies"} by ${fmt(n.uses.people)}` : "no reads in 90 days";
+  if (state.mapColor === "size" && G.meta.sizes && stored(n)) return n.size ? `${bytes(n.size.bytes)} in ${fmt(n.size.files)} file${n.size.files === 1 ? "" : "s"}` : "no size yet";
+  return n.grain ? trunc("per " + n.grain, 30) : n.kind === "table" ? "no grain stated" : word(n);
+}
 let maxDependents = 1;
 function viewMap() {
   const level = state.mapLevel === "schemas";
@@ -913,7 +1086,7 @@ function viewMap() {
       ${field("To", `<input class="txt" id="r-to" list="tables" placeholder="a table" value="${esc(state.route?.to || "")}">`)}
       <button class="btn primary" id="r-go">Find a route</button> ${state.route ? `<button class="btn" id="r-clear">Clear</button>` : ""}
       <datalist id="tables">${G.nodes.filter(inCatalog).map(n => `<option value="${esc(n.id)}">`).join("")}</datalist></section>
-    ${level ? "" : `<section><h4>Color</h4>${field("Fill tables by", `<select data-select="mapColor">${[["schema", "Domain"], ["written", "Last written"], ["none", "Nothing"]].map(([v, t]) => `<option value="${v}" ${state.mapColor === v ? "selected" : ""}>${t}</option>`).join("")}</select><div class="key">${colorKey(state.mapColor)}</div>`)}
+    ${level ? "" : `<section><h4>Color</h4>${field("Fill tables by", `<select data-select="mapColor">${[["schema", "Domain"], ["written", "Last written"], ["reads", "Read by queries"], ["size", "Size"], ["none", "Nothing"]].map(([v, t]) => `<option value="${v}" ${state.mapColor === v ? "selected" : ""}>${t}</option>`).join("")}</select><div class="key">${colorKey(state.mapColor)}</div>`)}
       <div class="key"><span><i class="swatch" style="background:#0969da;height:4px"></i>bar: how many objects depend on it</span><span>✓ certified</span></div></section>`}
     <section><h4>Selection</h4>${field(`Clicking a ${level ? "schema" : "table"} highlights`, seg("mapHighlight", [["direct", "Its edges"], ["lineage", "All up & downstream"]], state.mapHighlight))}</section>`;
   bindView($("#view"));
@@ -932,7 +1105,7 @@ async function renderMap() {
   maxDependents = Math.max(1, ...tables.map(n => dependents(n.id)));
   const L = PRE?.map?.routes ? asBuilt(PRE.map, edges) : await layout(tables.map(n => ({ id:n.id, width:MW, height:MH })), edges, { group:true, layer:50, gap:14 });
   const draw = L.bezier ? bezier : curve;
-  lastPos = new Map();
+  lastPos = new Map(); mapPos = L.pos;
   gz.selectAll("*").remove(); hideTip();
   const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
   const matches = id => { if (!words.length) return true; const n = byId.get(id);
@@ -961,22 +1134,22 @@ async function renderMap() {
     g.append("rect").attr("class", "box").attr("width", MW).attr("height", MH).attr("rx", 6).style("fill", fillFor(n, state.mapColor))
       .style("stroke-width", routeTables.has(id) ? 3 : null).style("stroke", routeTables.has(id) ? "#fb8500" : null);
     g.append("text").attr("x", 8).attr("y", 12).style("font-weight", 600).text((n.kind === "table" ? "" : KIND[n.kind].icon + " ") + trunc(n.name, 22) + (n.tags.certified ? " ✓" : ""));
-    g.append("text").attr("x", 8).attr("y", 26).style("font-size", "10px").style("fill", "#656d76").text(n.grain ? trunc("per " + n.grain, 30) : n.kind === "table" ? "no grain stated" : word(n));
+    g.append("text").attr("x", 8).attr("y", 26).style("font-size", "10px").style("fill", "#656d76").text(mapLine(n));
     const bw = dependents(id) ? 4 + 40 * Math.log1p(dependents(id)) / Math.log1p(maxDependents) : 0;
     g.append("rect").attr("x", MW - 8 - bw).attr("y", 5).attr("width", bw).attr("height", 4).style("fill", "#0969da");
     g.on("click", ev => { ev.stopPropagation(); state.selected = id; state.panel = null;
         if (state.route) { state.route = null; return renderMap(); } highlight(id, state.mapHighlight); renderPanel(); })
      .on("dblclick", ev => { ev.stopPropagation(); focusOn(id); })
      .on("mouseenter", () => { if (!state.route && !words.length) highlight(id, state.mapHighlight); })
-     .on("mouseleave", () => { hideTip(); if (!state.route && !words.length) highlight(state.selected, state.mapHighlight); })
+     .on("mouseleave", () => { hideTip(); if (state.panel === "job") highlightJob(state.job); else if (!state.route && !words.length) highlight(state.selected, state.mapHighlight); })
      .on("mousemove", ev => showTip(ev, `<b>${esc(id)}</b><br>${esc(n.comment || "")}<br>${dependents(id)} objects downstream${n.tags.certified ? " · certified" : ""}<br><span style="opacity:.7">click to select · double-click to explore</span>`));
     drawn.nodes.set(id, g);
   });
-  if (state.selected && !state.route && !words.length) highlight(state.selected, state.mapHighlight);
+  if (state.selected && !state.route && !words.length && state.panel !== "job") highlight(state.selected, state.mapHighlight);
   $("#hint").innerHTML = "Regions are schemas · " + (L.bezier ? `${L.crossings} edge crossings · drawn by the build${L.built.tries > 1 ? `, the tidiest of ${L.built.tries} layouts it tried` : ""}` : crossingNote(L));
   svg.on("click", ev => { if (ev.target !== svg.node()) return;
     if (state.route) { state.route = null; return renderMap(); }
-    state.selected = null; highlight(null); renderPanel(); });
+    state.selected = null; state.panel = null; highlight(null); renderPanel(); });
   const box = boundsOf(state.route?.path ? state.route.path.map(id => L.pos.get(id)).filter(Boolean)
     : state.mapSchema ? L.groups.filter(g => g.schema === state.mapSchema) : []);
   if (box) fit(box.w, box.h, 60, box.x, box.y); else fit(L.width, L.height, 30);
@@ -1106,6 +1279,25 @@ function panelRoute() {
     <h3>A starting point</h3><pre>${esc(sql)}</pre>`;
 }
 const trust = n => (n.tags.certified ? 1000 : 0) + dependents(n.id);
+// what query history and the storage metrics say across the catalog: the most read, the unread, the largest, the jobs
+function compassFacts() {
+  const objs = G.nodes.filter(inCatalog), row = (n, text) => `<div>${link(n.id)} <span class="sub">${text}</span></div>`;
+  const out = [];
+  if (G.meta.history) {
+    const most = objs.filter(n => n.uses).sort((a, b) => b.uses.queries - a.uses.queries).slice(0, 5);
+    const unread = objs.filter(n => !n.uses);
+    out.push(`<h3>Most read</h3>${most.map(n => row(n, `${fmt(n.uses.queries)} quer${n.uses.queries === 1 ? "y" : "ies"} by ${fmt(n.uses.people)}`)).join("") || `<p class="sub">No query read anything in the 90 days before the snapshot.</p>`}`,
+      `<h3>Not read in 90 days (${unread.length})</h3><p class="sub">No query that only reads touched them, as the lineage recorded it. Those with nothing downstream either may be unused.</p>
+       ${unread.filter(n => !dependents(n.id)).slice(0, 8).map(n => row(n, "nothing downstream")).join("")}${unread.filter(n => !dependents(n.id)).length > 8 ? `<p class="sub">and ${unread.filter(n => !dependents(n.id)).length - 8} more; color the map by reads to see them all</p>` : ""}`);
+  }
+  if (G.meta.sizes) {
+    const big = objs.filter(n => n.size).sort((a, b) => b.size.bytes - a.size.bytes).slice(0, 5);
+    out.push(`<h3>Largest</h3>${big.map(n => row(n, bytes(n.size.bytes))).join("") || `<p class="sub">The storage metrics have no table yet.</p>`}`);
+  }
+  if (JOB_IDS.length) out.push(`<h3>Jobs (${JOB_IDS.length})</h3>${JOB_IDS.map(id => { const { wrote, read } = jobObjects(id);
+    return `<div>${jobLink(id)} <span class="sub">writes ${wrote.size}, reads ${read.size}</span></div>`; }).join("")}`);
+  return out.join("");
+}
 function panelCompass() {
   const q = state.query && search(state.query);
   const cands = q ? [...new Set(q.map(h => h.kind === "column" ? tableOf(h.id) : h.id))].map(id => byId.get(id)).filter(n => n.kind !== "files")
@@ -1115,6 +1307,7 @@ function panelCompass() {
     <dt>last written</dt><dd>${written(n)}</dd><dt>owner</dt><dd>${esc(n.owner || "—")}</dd></dl></div>`;
   $("#panel").innerHTML = cands ? `<h2>Tables for “${esc(state.query)}”</h2><p class="sub">Certified first, then those the most objects depend on. Check the grain before you pick.</p>${cands.map(card).join("") || "<p>Nothing matches.</p>"}`
     : `<h2>Compass</h2><p>Search for business words (<i>revenue</i>, <i>refund</i>, <i>campaign</i>) and the map lights up where they live, with the most trusted tables listed here.</p>
+      ${compassFacts()}
       <h3>Where to start, by domain</h3>${G.schemas.filter(s => !s.outside && s.name !== "(files)").map(s => { const top = G.nodes.filter(n => n.schema === s.name).sort((a, b) => trust(b) - trust(a)).slice(0, 2);
         return `<div style="margin:6px 0"><span class="chip" style="border-color:${schemaColor(s.name)}">${esc(s.name)}</span> <span class="sub">${esc(s.comment)}</span><br>${top.map(n => `<a href="#" data-goto="${esc(n.id)}">${esc(n.name)}</a>${n.tags.certified ? " ✓" : ""} <span class="sub">${dependents(n.id)} downstream</span>`).join(" · ")}</div>`; }).join("")}`;
   wirePanel();

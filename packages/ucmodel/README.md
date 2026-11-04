@@ -23,10 +23,13 @@ With `--warehouse ID`, tags, grants, functions' names and lineage come from
 five queries for the whole catalog, on `system.information_schema` and the
 `system.access` lineage tables, and only the schemas' lists are read over
 REST. The model is the same either way. A query that fails falls back to
-REST, and says so. Two more queries read, from `system.query.history`, the
-statements that wrote each object in the last 90 days and how often each
-object was read, unless `--no-history`; the snapshot then holds that SQL and
-who ran it.
+REST, and says so. Three more queries read, from `system.query.history`, the
+statements that wrote each object in the last 90 days, how often each
+object was read, and the queries that read objects together, unless
+`--no-history`; the jobs those statements ran from come with their tasks,
+from the jobs API. The snapshot then holds that SQL, who ran it, and the
+jobs' notebook and file paths. One more query reads each table's size from
+`system.storage.table_metrics_history`.
 The file holds a hash of its contents, and `diff` refuses a file that was
 changed after it was taken. It holds what the API returns, owners' names
 included.

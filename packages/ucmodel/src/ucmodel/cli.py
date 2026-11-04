@@ -36,10 +36,11 @@ def main(argv: list[str] | None = None) -> int:
                         "or two queries with --warehouse")
     p.add_argument("--warehouse", metavar="ID",
                    help="a SQL warehouse, to read tags, grants and lineage for the whole "
-                        "catalog in a few queries rather than in calls per object, and the "
-                        "statements query history says wrote each object")
+                        "catalog in a few queries rather than in calls per object; what query "
+                        "history says wrote and read each object, and the jobs it ran in; and "
+                        "each table's size")
     p.add_argument("--no-history", action="store_true",
-                   help="with --warehouse, don't read query history")
+                   help="with --warehouse, don't read query history or the jobs")
 
     p = sub.add_parser("diff", help="report what changed between two snapshots. Exits 1 "
                                     "when anything did")
@@ -83,6 +84,12 @@ def cmd_snapshot(ws: Workspace, args: argparse.Namespace) -> int:
                  f"{len(s.lineage.columns)} column edges")
         if s.lineage.writes is not None:
             held += f", {len(s.lineage.writes)} statements from query history"
+        if s.lineage.queries:
+            held += f", {len(s.lineage.queries)} queries that join"
+        if s.lineage.jobs:
+            held += f", {len(s.lineage.jobs)} job{'s' if len(s.lineage.jobs) != 1 else ''}"
+        if s.lineage.sizes is not None:
+            held += f"; sizes of {len(s.lineage.sizes)} tables"
     print(f"{s.describe()}: {held or 'nothing'}, read in {time.monotonic() - start:.1f} s",
           file=sys.stderr)
     print(path)
