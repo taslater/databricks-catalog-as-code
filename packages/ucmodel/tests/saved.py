@@ -27,17 +27,14 @@ class SavedWorkspace(Workspace):
         s = self._schema(full_name)
         return s and s["info"]
 
-    def table(self, full_name):
-        return self._object(full_name, "tables")["info"]
-
     def get_or_none(self, path, **query):
         assert path.startswith(f"{UC}/functions/"), path
         return self._object(unquote(path.rsplit("/", 1)[1]), "functions")["info"]
 
     def list_all(self, path, key, **query):
         s = self.raw[query["schema_name"]]
-        if key == "volumes":
-            return [v["info"] for v in s["volumes"].values()]
+        if key in ("tables", "volumes"):  # a list holds each one's whole state
+            return [o["info"] for o in s[key].values()]
         return [{"name": name} for name in s[key]]
 
     def tags(self, entity_type, full_name):

@@ -20,9 +20,11 @@ into reports and drawings. The spec reaches a catalog only through
 `ucstate apply`. Nothing writes the spec from a catalog except
 `ucstate import`, which starts a project.
 
-A snapshot is read over REST with no SQL warehouse. Reading takes about three
+A snapshot is read over REST, with no SQL warehouse. Reading takes about two
 API calls per table, and lineage takes one more per table and per column, so
-a catalog is read once and looked at from the file as often as needed.
+a catalog is read once and looked at from the file as often as needed. Given
+a warehouse, a snapshot reads tags, grants and lineage for the whole catalog
+in a few queries instead, and lists each schema over REST.
 Comparing two snapshots takes a moment and no workspace. A snapshot file
 holds a hash of its contents, and the tools refuse one that was edited.
 
@@ -92,7 +94,7 @@ them touches a catalog.
 
 | Package | Does |
 | --- | --- |
-| `ucmodel` | Reads a Unity Catalog over REST into a normalised model, compiles source DDL into the same model, and compares two models. Its command takes snapshots and reports on them. No SQL warehouse needed |
+| `ucmodel` | Reads a Unity Catalog over REST into a normalised model, compiles source DDL into the same model, and compares two models. Its command takes snapshots and reports on them. No SQL warehouse needed, and one makes a snapshot faster |
 | `ucstate` | Imports a catalog as source files, plans and applies the changes that bring a catalog to its source, and records each deployment in the catalog |
 | `ucatlas` | Draws a catalog, or a snapshot of one, as a static site of ER diagrams and lineage graphs, writes an interactive explorer of a snapshot, and serves a local UI over the commands. Needs Graphviz |
 
@@ -151,7 +153,9 @@ uv run ucatlas explore --snapshot snapshots/NEWER.json --sql jobs/ -o explorer
 
 - `snapshot` writes `snapshots/<catalog>-<time>-<hash>.json` and prints its
   path. `--schema` reads only the schemas named, and `--no-lineage` skips
-  lineage. It never replaces a file. A snapshot holds what the API returns,
+  lineage. `--warehouse ID` reads tags, grants, functions' names and lineage
+  with five queries on that SQL warehouse; it reads the same model, and
+  falls back to REST for what it can't query. It never replaces a file. A snapshot holds what the API returns,
   owners' names included, so keep it where the catalog's metadata may go:
   this repository ignores `snapshots/`.
 - `diff` reports what was added, removed and changed between two snapshots,

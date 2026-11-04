@@ -164,5 +164,10 @@ class Workspace:
         if not (r.manifest and r.manifest.schema and r.manifest.schema.columns):
             return []
         columns = [c.name for c in r.manifest.schema.columns]
-        rows = (r.result.data_array or []) if r.result else []
+        rows = list((r.result.data_array or []) if r.result else [])
+        chunk = r.result.next_chunk_index if r.result else None
+        while chunk is not None:  # a big result comes in chunks
+            part = api.get_statement_result_chunk_n(cast(str, r.statement_id), chunk)
+            rows.extend(part.data_array or [])
+            chunk = part.next_chunk_index
         return [dict(zip(columns, row, strict=True)) for row in rows]
