@@ -31,7 +31,10 @@ One interactive page for a whole snapshot: which objects feed which, how
 each column is computed, and how tables join. Explore follows an object's
 lineage, Compare lines up tables' columns by where their values come from,
 and Map shows the catalog by schema or by table. `--sql` adds the lineage
-of the SQL files that load the catalog. It reads no workspace and no
+of the SQL files that load the catalog. A snapshot read with a warehouse
+adds what ran: the statements that wrote each object and the jobs they ran
+in, the joins people's queries make, how often each object is read, and
+how much each table holds. It reads no workspace and no
 warehouse. The page holds what the snapshot holds, owners' names included.
 It comes with the two libraries it draws with, d3 and elkjs, so it works
 without internet access. The guide is the repo's [`docs/explorer.md`](https://github.com/taslater/databricks-catalog-as-code/blob/main/docs/explorer.md).

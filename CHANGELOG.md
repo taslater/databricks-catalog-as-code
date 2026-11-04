@@ -38,6 +38,15 @@ All notable changes are listed here. The format follows
 - `probes/history_job.py` makes and runs a job that writes
   `ucstate_test.kinds` from a notebook on serverless compute and a SQL file
   on a warehouse, so query history has a job's statements to show.
+- With `--warehouse`, a snapshot's lineage also holds each table's size and
+  the days in the last 90 it changed, from
+  `system.storage.table_metrics_history`; the queries that read two or more
+  objects together and wrote nothing, the ten most run for each set of
+  objects; and the jobs the writes ran from, with each job's tasks (what
+  each runs, and what it waits for) from the jobs API, and each write's
+  task from `system.lakeflow`.
+- Query history counts every run of a query that read an object, including
+  runs answered from a warehouse's result cache, which record no lineage.
 
 ### ucatlas
 
@@ -56,6 +65,15 @@ All notable changes are listed here. The format follows
   read the object and by how many people. A materialized view's or a
   streaming table's panel names the pipeline that refreshes it.
 - A filter reads `x IS NOT NULL` as written, not `NOT x IS NULL`.
+- The explorer colors objects by how many queries read them, or by how much
+  they hold, and the map's cards then say the number. The map's Compass
+  lists the most read objects, those nothing reads, and the largest tables.
+- An object's panel says how much it holds and how that changed, and lists
+  the tables it is joined with, on which columns, from declared keys, the
+  SQL, and the queries in query history, which Route uses too.
+- A statement that ran in a job names its task and what the task runs. An
+  object's writers from one job are listed under it, and a job's panel
+  shows its tasks in order, what each wrote and read, and highlights them.
 
 - When Graphviz is missing, the error names the program it needs and how to
   install Graphviz on this platform (Homebrew, winget, apt or dnf), or with

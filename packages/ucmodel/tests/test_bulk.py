@@ -5,6 +5,7 @@ import io
 from types import SimpleNamespace
 
 import pytest
+from databricks.sdk.errors import NotFound
 
 from saved import SavedWorkspace
 from ucmodel import bulk, reader, samples
@@ -169,12 +170,18 @@ class Kinds(SavedWorkspace):
         self.warehouse_id: str | None = "w"
         self.refuse = refuse
         self.statements: list[str] = []
-        self.history: dict[str, list[dict]] = {bulk.WRITES: [], bulk.USES: []}
+        self.history: dict[str, list[dict]] = {q: [] for q in (
+            bulk.WRITES, bulk.USES, bulk.QUERIES_READ, bulk.SIZES, bulk.TASK_RUNS)}
+        self.jobs: dict[str, dict] = {}  # what the jobs API has, by id
 
     def catalog(self, name):
         return {"name": name}
 
     def get(self, path, **query):  # lineage over REST: none
+        if path == "/api/2.1/jobs/get":
+            if query["job_id"] not in self.jobs:
+                raise NotFound("no such job")
+            return self.jobs[query["job_id"]]
         return {}
 
     def sql(self, statement, catalog=None, schema=None, params=None):
@@ -182,7 +189,7 @@ class Kinds(SavedWorkspace):
         if self.refuse:
             raise SqlError("[INSUFFICIENT_PERMISSIONS] not for you")
         tags, grants, functions = rows({"schemas": self.raw})
-        if statement in (bulk.WRITES, bulk.USES):
+        if statement in self.history:
             return self.history[statement]
         if statement == bulk.NAMES:
             return [{"id": "pipeline:p", "name": "MV-kinds"}]
@@ -196,7 +203,7 @@ def test_a_snapshot_with_a_warehouse_is_the_snapshot_over_rest():
     rest_only.warehouse_id = None
     assert (take(with_warehouse, "ucstate_test", ["kinds"]).model
             == take(rest_only, "ucstate_test", ["kinds"]).model == samples.model("kinds"))
-    assert len(with_warehouse.statements) == 8  # with one naming the two pipelines
+    assert len(with_warehouse.statements) == 10  # with one naming the two pipelines
 
 
 def test_a_query_that_fails_falls_back_to_rest_and_says_so():
@@ -286,7 +293,7 @@ def test_without_history_a_snapshots_lineage_is_as_before(tmp_path):
     from ucmodel.snapshot import load, write
     s = take(Kinds(), "ucstate_test", ["kinds"], with_history=False)
     assert s.lineage is not None and s.lineage.writes is None
-    assert "writes" not in s.lineage.to_json()  # so the hash of such a snapshot is as before
+    assert not {"writes", "uses", "queries", "jobs"} & set(s.lineage.to_json())
     assert load(write(s, tmp_path / "s.json")).lineage == s.lineage
 
 
@@ -331,4 +338,98 @@ def test_the_control_two_queries_are_counted_as_queries(kinds):
     out = io.StringIO()
     bulk.history(Kinds(), "ucstate_test", kinds,  # type: ignore[arg-type]
                  progress=Progress(out, live=False))
-    assert "reading query history: 2 queries" in out.getvalue()
+    assert "reading query history: 3 queries" in out.getvalue()
+
+
+
+# queries that join, sizes and jobs ------------------------------------------------------
+
+def test_queries_that_read_the_models_objects_together_are_kept_most_run_first(kinds):
+    found = bulk.read_together("ucstate_test", kinds, [
+        {"sql": "SELECT 1", "tables": '["kinds.orders","kinds.orders_feed"]', "runs": "2",
+         "people": "1", "last": "2026-11-04T17:00:00.4Z"},
+        {"sql": "SELECT 2", "tables": '["kinds.orders","sales.t@other"]', "runs": "5",
+         "people": "2", "last": "2026-11-04T18:00:00Z"},
+        {"sql": "SELECT 3", "tables": '["kinds.gone","kinds.also_gone"]', "runs": "9",
+         "people": "1", "last": "2026-11-04T18:00:00Z"}])
+    assert [(q.sql, q.tables, q.runs, q.people, q.last) for q in found] == [
+        ("SELECT 2", ["kinds.orders", "other.sales.t"], 5, 2, "2026-11-04T18:00:00Z"),
+        ("SELECT 1", ["kinds.orders", "kinds.orders_feed"], 2, 1, "2026-11-04T17:00:00Z")]
+
+
+def size_row(t: str, day: str, size: int, files: int = 1) -> dict:
+    return {"s": "kinds", "t": t, "day": day, "bytes": str(size), "files": str(files)}
+
+
+def test_sizes_are_each_tables_latest_with_the_days_it_changed(kinds):
+    found = bulk.sized(kinds, [size_row("orders", "2026-11-04", 300, 3),
+                               size_row("orders", "2026-11-01", 100),
+                               size_row("orders", "2026-11-03", 200, 2),
+                               size_row("dropped", "2026-11-04", 5)])
+    assert [(z.target, z.bytes, z.files, z.on, z.history) for z in found] == [
+        ("kinds.orders", 300, 3, "2026-11-04",
+         [("2026-11-01", 100), ("2026-11-03", 200), ("2026-11-04", 300)])]
+
+
+@pytest.mark.parametrize(("definition", "runs", "path"), [
+    ({"notebook_task": {"notebook_path": "/Shared/daily"}}, "notebook", "/Shared/daily"),
+    ({"sql_task": {"file": {"path": "/Shared/refresh.sql"}, "warehouse_id": "w"}}, "sql_file",
+     "/Shared/refresh.sql"),
+    ({"sql_task": {"query": {"query_id": "q1"}}}, "sql_query", "q1"),
+    ({"pipeline_task": {"pipeline_id": "p1"}}, "pipeline", "p1"),
+    ({"run_job_task": {"job_id": 7}}, "job", "7"),
+    ({"condition_task": {"op": "EQUAL_TO", "left": "a", "right": "b"}}, "condition", None),
+    ({"something_new": {}}, "other", None),
+])
+def test_a_task_says_what_it_runs(definition, runs, path):
+    t = bulk.task({"task_key": "k", "depends_on": [{"task_key": "b"}, {"task_key": "a"}],
+                   **definition})
+    assert (t.key, t.depends_on, t.runs, t.path) == ("k", ["a", "b"], runs, path)
+
+
+def job_write(run: str | None, job: str = "11") -> object:
+    from ucmodel.lineage import Write
+    source = {"job_id": job, "job_run_id": "12", **({"job_task_run_id": run} if run else {})}
+    return Write("kinds.orders", "INSERT ...", "INSERT", 1, "2026-11-04T17:00:00Z", None, None,
+                 source, 1, True)
+
+
+def test_writes_get_their_task_and_their_jobs_tasks_are_read():
+    ws = Kinds()
+    ws.history[bulk.TASK_RUNS] = [{"run_id": "21", "task_key": "daily"}]
+    ws.jobs = {"11": {"settings": {"tasks": [
+        {"task_key": "daily", "notebook_task": {"notebook_path": "/Shared/daily"}},
+        {"task_key": "refresh", "depends_on": [{"task_key": "daily"}],
+         "sql_task": {"file": {"path": "/Shared/refresh.sql"}}}]}}}
+    writes, jobs = bulk.jobs(ws, [job_write("21"), job_write("22"), job_write(None, job="99")])  # type: ignore[arg-type,list-item]
+    assert [w.source.get("task_key") for w in writes] == ["daily", None, None]
+    assert [(j.id, [(t.key, t.depends_on, t.runs) for t in j.tasks]) for j in jobs] == [
+        ("11", [("daily", [], "notebook"), ("refresh", ["daily"], "sql_file")])]  # 99 is gone
+
+
+def test_with_no_job_no_query_runs():
+    ws = Kinds()
+    assert bulk.jobs(ws, []) == ([], [])  # type: ignore[arg-type]
+    assert ws.statements == []
+
+
+def test_a_snapshot_keeps_sizes_queries_and_jobs(tmp_path):
+    from ucmodel.snapshot import load, write
+    ws = Kinds()
+    ws.history[bulk.WRITES] = [write_row(
+        "orders", "INSERT INTO kinds.orders SELECT 1", "2026-11-04T17:00:00Z",
+        source='{"job_info":{"job_id":"11","job_run_id":"12","job_task_run_id":"21"}}')]
+    ws.history[bulk.TASK_RUNS] = [{"run_id": "21", "task_key": "daily"}]
+    ws.history[bulk.SIZES] = [size_row("orders", "2026-11-04", 300)]
+    ws.history[bulk.QUERIES_READ] = [
+        {"sql": "SELECT 1", "tables": '["kinds.orders","kinds.orders_feed"]', "runs": "2",
+         "people": "1", "last": "2026-11-04T17:00:00Z"}]
+    ws.jobs = {"11": {"settings": {"tasks": [{"task_key": "daily", "notebook_task": {
+        "notebook_path": "/Shared/daily"}}]}}}
+    s = take(ws, "ucstate_test", ["kinds"])
+    assert s.lineage is not None
+    assert s.lineage.writes and s.lineage.writes[0].source["task_key"] == "daily"
+    assert [z.target for z in s.lineage.sizes or []] == ["kinds.orders"]
+    assert [q.sql for q in s.lineage.queries or []] == ["SELECT 1"]
+    assert [j.id for j in s.lineage.jobs or []] == ["11"]
+    assert load(write(s, tmp_path / "s.json")).lineage == s.lineage

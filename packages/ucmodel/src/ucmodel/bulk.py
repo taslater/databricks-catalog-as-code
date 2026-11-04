@@ -26,7 +26,11 @@ per column. With a warehouse, five queries do the same:
   refreshes have no statement there. `names` then names the jobs and pipelines those
   statements ran from, and the pipelines that refresh the model's materialized views
   and streaming tables, from `system.lakeflow`, which has a job some time after it is
-  created.
+  created. `history` also keeps the queries that read two or more objects, one of them
+  the model's, and wrote nothing, for the joins they make. `jobs` finds the task each
+  write ran in, from `system.lakeflow`, and the jobs' tasks, from the jobs API.
+- `sizes` reads how much each table holds, and when that changed, from
+  `system.storage.table_metrics_history`, which has a table's size once a day.
 
 What these queries can see is what the caller can see, as over REST. A grant inherited
 from a schema or catalog is left out, as the permissions API leaves it out. The system
@@ -39,12 +43,12 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 
 from databricks.sdk.errors.base import DatabricksError
 
-from .lineage import Edge, Lineage, Use, Write, _merge, _name
+from .lineage import Edge, Job, Lineage, Query, Size, Task, Use, Write, _merge, _name
 from .model import tabular
 from .progress import Progress
 from .workspace import Workspace
@@ -123,15 +127,75 @@ ran AS (
    GROUP BY w.s, w.t, h.statement_text, h.statement_type)
 SELECT *, count(*) OVER (PARTITION BY s, t) AS of FROM ran
 QUALIFY row_number() OVER (PARTITION BY s, t ORDER BY last DESC) <= {KEEP}"""
+# A run answered from a warehouse's result cache records no lineage, so the lineage says
+# which statements read an object, and query history counts every run of their text.
+_RAN = f"""(SELECT statement_id, statement_text, executed_by, start_time FROM system.query.history
+   WHERE execution_status = 'FINISHED' AND start_time >= date_sub(current_date(), {DAYS}))"""
 USES = f"""
-SELECT source_table_schema AS s, source_table_name AS t,
-       count(DISTINCT statement_id) AS queries, count(DISTINCT created_by) AS people,
-       max(event_time) AS last
-  FROM system.access.table_lineage
- WHERE source_table_catalog = :catalog AND source_table_name IS NOT NULL
-   AND target_table_name IS NULL AND statement_id IS NOT NULL
-   AND event_date >= date_sub(current_date(), {DAYS})
- GROUP BY ALL"""
+WITH r AS (
+  SELECT DISTINCT statement_id, source_table_schema AS s, source_table_name AS t
+    FROM system.access.table_lineage
+   WHERE source_table_catalog = :catalog AND source_table_name IS NOT NULL
+     AND target_table_name IS NULL AND statement_id IS NOT NULL
+     AND event_date >= date_sub(current_date(), {DAYS})),
+texts AS (
+  SELECT DISTINCT r.s, r.t, h.statement_text
+    FROM r JOIN {_RAN} h ON h.statement_id = r.statement_id)
+SELECT x.s, x.t, count(*) AS queries, count(DISTINCT h.executed_by) AS people,
+       max(h.start_time) AS last
+  FROM texts x JOIN {_RAN} h ON h.statement_text = x.statement_text
+ GROUP BY x.s, x.t"""
+# the queries that read two or more objects, one of them in the catalog, and wrote nothing:
+# the most run ten for each set of objects, and the most run 500 in all
+KEEP_QUERIES = 500
+QUERIES_READ = f"""
+WITH r AS (
+  SELECT statement_id,
+         to_json(array_sort(collect_set(concat(source_table_schema, '.', source_table_name,
+           CASE WHEN source_table_catalog = :catalog THEN '' ELSE concat('@', source_table_catalog)
+           END)))) AS tables
+    FROM system.access.table_lineage
+   WHERE source_table_name IS NOT NULL AND target_table_name IS NULL
+     AND statement_id IS NOT NULL AND event_date >= date_sub(current_date(), {DAYS})
+   GROUP BY statement_id
+  HAVING count(DISTINCT source_table_catalog, source_table_schema, source_table_name) >= 2
+     AND max(source_table_catalog = :catalog)),
+texts AS (
+  SELECT h.statement_text AS sql, max(r.tables) AS tables
+    FROM r JOIN {_RAN} h ON h.statement_id = r.statement_id
+   GROUP BY h.statement_text),
+q AS (
+  SELECT x.sql, x.tables, count(*) AS runs, count(DISTINCT h.executed_by) AS people,
+         max(h.start_time) AS last
+    FROM texts x JOIN {_RAN} h ON h.statement_text = x.sql
+   GROUP BY x.sql, x.tables),
+top AS (
+  SELECT * FROM q QUALIFY row_number() OVER (PARTITION BY tables ORDER BY runs DESC, last DESC)
+                          <= {KEEP})
+SELECT * FROM top QUALIFY row_number() OVER (ORDER BY runs DESC, last DESC) <= {KEEP_QUERIES}"""
+
+# each table's size on the first day read, on each day it changed, and on the latest day
+SIZES = f"""
+WITH d AS (
+  SELECT schema_name AS s, table_name AS t, snapshot_date AS day,
+         max_by(active_bytes, table_creation_time) AS bytes,
+         max_by(active_files, table_creation_time) AS files
+    FROM system.storage.table_metrics_history
+   WHERE catalog_name = :catalog AND table_dropped_time IS NULL AND active_bytes IS NOT NULL
+     AND snapshot_date >= date_sub(current_date(), {DAYS})
+   GROUP BY ALL),
+c AS (
+  SELECT *, lag(bytes) OVER (PARTITION BY s, t ORDER BY day) AS before,
+         row_number() OVER (PARTITION BY s, t ORDER BY day DESC) AS latest
+    FROM d)
+SELECT s, t, day, bytes, files FROM c WHERE before IS NULL OR bytes <> before OR latest = 1"""
+
+# the task each of the writes' task runs ran
+TASK_RUNS = f"""
+SELECT run_id, max(task_key) AS task_key FROM system.lakeflow.job_task_run_timeline
+ WHERE array_contains(split(:jobs, ','), job_id) AND array_contains(split(:runs, ','), run_id)
+   AND period_start_time >= date_sub(current_date(), {DAYS})
+ GROUP BY run_id"""
 
 NAMES = """
 SELECT concat('job:', job_id) AS id, max_by(name, change_time) AS name
@@ -205,13 +269,116 @@ def lineage(ws: Workspace, catalog: str, model: dict[str, dict],
 
 
 def history(ws: Workspace, catalog: str, model: dict[str, dict],
-            progress: Progress | None = None) -> tuple[list[Write], list[Use]]:
-    """The statements that wrote the model's objects, and how often each was read."""
+            progress: Progress | None = None) -> tuple[list[Write], list[Use], list[Query]]:
+    """The statements that wrote the model's objects, how often each was read, and the
+    queries that read two or more objects."""
     p = progress or Progress.off()
-    with p.step("reading query history", 2, QUERIES) as step:
-        writes, uses = ws.map(lambda q: ws.sql(q, params={"catalog": catalog}), [WRITES, USES],
-                              done=lambda q: step.tick())
-    return ran(model, writes, uses)
+    with p.step("reading query history", 3, QUERIES) as step:
+        writes, uses, queries = ws.map(lambda q: ws.sql(q, params={"catalog": catalog}),
+                                       [WRITES, USES, QUERIES_READ], done=lambda q: step.tick())
+    return (*ran(model, writes, uses), read_together(catalog, model, queries))
+
+
+def read_together(catalog: str, model: dict[str, dict], rows: list[dict]) -> list[Query]:
+    """The rows as queries that read one of the model's objects, most run first. An
+    object in another catalog is named `catalog.schema.table`, as edges name it."""
+    own = {o["name"] for o in model.values() if tabular(o)}
+    def named(t: str) -> str:
+        name, _, elsewhere = t.partition("@")
+        return f"{elsewhere}.{name}" if elsewhere else name
+    found = []
+    for r in rows:
+        tables = sorted(named(t) for t in json.loads(r["tables"]))
+        if any(t in own for t in tables):
+            found.append(Query(r["sql"], tables, int(r["runs"]), int(r["people"]),
+                               _iso(r["last"])))
+    return sorted(found, key=lambda q: (-q.runs, q.sql))
+
+
+def sizes(ws: Workspace, catalog: str, model: dict[str, dict],
+          progress: Progress | None = None) -> list[Size]:
+    """How much each of the model's tables holds, and how that changed, from
+    `system.storage.table_metrics_history`."""
+    with (progress or Progress.off()).step("reading table sizes", 1, QUERIES) as step:
+        rows = ws.sql(SIZES, params={"catalog": catalog})
+        step.tick()
+    return sized(model, rows)
+
+
+def sized(model: dict[str, dict], rows: list[dict]) -> list[Size]:
+    own = {o["name"] for o in model.values() if tabular(o)}
+    by: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        if (name := f"{r['s']}.{r['t']}") in own:
+            by[name].append(r)
+    out = []
+    for name, found in sorted(by.items()):
+        found.sort(key=lambda r: r["day"])
+        last = found[-1]
+        out.append(Size(name, int(last["bytes"]), int(last["files"]), last["day"],
+                        [(r["day"], int(r["bytes"])) for r in found]))
+    return out
+
+
+def jobs(ws: Workspace, writes: list[Write],
+         progress: Progress | None = None) -> tuple[list[Write], list[Job]]:
+    """The writes, each that ran in a job's task with the task's key in its source as
+    `task_key`, from `system.lakeflow`; and the tasks of the jobs they ran from, from
+    the jobs API. A job that is gone, or can't be seen, is left out."""
+    p = progress or Progress.off()
+    ids = sorted({w.source["job_id"] for w in writes if "job_id" in w.source})
+    runs = sorted({w.source["job_task_run_id"] for w in writes if "job_task_run_id" in w.source})
+    if not ids:
+        return writes, []
+    keys: dict[str, str] = {}
+    if runs:
+        with p.step("finding the jobs' tasks", 1, QUERIES) as step:
+            rows = ws.sql(TASK_RUNS, params={"jobs": ",".join(ids), "runs": ",".join(runs)})
+            step.tick()
+        keys = {r["run_id"]: r["task_key"] for r in rows if r["task_key"]}
+
+    def job(job_id: str) -> Job | None:
+        try:
+            found = ws.get("/api/2.1/jobs/get", job_id=job_id)
+        except DatabricksError:
+            return None
+        return Job(job_id, [task(t) for t in (found.get("settings") or {}).get("tasks") or []])
+    with p.step("reading jobs", len(ids), "jobs") as step:
+        found = ws.map(job, ids, done=lambda i: step.tick())
+    tasked = [replace(w, source={**w.source, "task_key": keys[w.source["job_task_run_id"]]})
+              if w.source.get("job_task_run_id") in keys else w for w in writes]
+    return tasked, [j for j in found if j is not None]
+
+
+# what a task runs, by the field the jobs API gives it, and where its path or id is
+RUNS = (("notebook_task", "notebook", ("notebook_path",)),
+        ("sql_task", "sql_file", ("file", "path")),
+        ("sql_task", "sql_query", ("query", "query_id")),
+        ("sql_task", "dashboard", ("dashboard", "dashboard_id")),
+        ("sql_task", "alert", ("alert", "alert_id")),
+        ("spark_python_task", "python", ("python_file",)),
+        ("python_wheel_task", "wheel", ("package_name",)),
+        ("spark_jar_task", "jar", ("main_class_name",)),
+        ("pipeline_task", "pipeline", ("pipeline_id",)),
+        ("run_job_task", "job", ("job_id",)),
+        ("dbt_task", "dbt", ("project_directory",)),
+        ("dashboard_task", "dashboard", ("dashboard_id",)),
+        ("condition_task", "condition", ()),
+        ("for_each_task", "for_each", ("task", "task_key")))
+
+
+def task(t: dict) -> Task:
+    """A task as the jobs API defines it."""
+    after = sorted(d["task_key"] for d in t.get("depends_on") or [])
+    for field_, runs, path in RUNS:
+        if field_ not in t:
+            continue
+        at: object = t[field_] if path else None
+        for key in path:
+            at = at.get(key) if isinstance(at, dict) else None
+        if at is not None or not path:
+            return Task(t["task_key"], after, runs, None if at is None else str(at))
+    return Task(t["task_key"], after, "other", None)
 
 
 def names(ws: Workspace, model: dict[str, dict], writes: list[Write],

@@ -125,3 +125,61 @@ def test_names_of_jobs_and_pipelines_go_to_the_page(model):
     assert g["names"] == {"job:11": "nightly", "pipeline:p": "MV-x"}
     assert nodes(g)["kinds.region_totals"]["pipeline"]  # its pipeline's id, from the model
     assert nodes(g)["kinds.orders"]["pipeline"] is None
+
+
+def test_a_query_that_read_objects_together_gives_their_join(model):
+    from ucmodel.lineage import Query
+    found = Lineage([], [], [], [], {}, [
+        Query("SELECT o.amount, f.amount FROM kinds.orders AS o "
+              "JOIN kinds.orders_feed AS f ON f.order_id = o.order_id",
+              ["kinds.orders", "kinds.orders_feed"], 6, 2, "2026-11-04T17:00:00Z"),
+        Query("SELECT o.amount FROM kinds.orders AS o, kinds.orders_feed AS f",  # no ON: no join
+              ["kinds.orders", "kinds.orders_feed"], 1, 1, "2026-11-04T17:00:00Z"),
+        Query("SELECT (a FROM kinds.orders", ["kinds.orders", "kinds.orders_feed"], 1, 1,
+              "2026-11-04T17:00:00Z")])
+    g = explore.graph(model, "ucstate_test", TAKEN, found)
+    assert [(j["a"], j["b"], j["code"]) for j in g["joins"]] == [
+        ("kinds.orders.order_id", "kinds.orders_feed.order_id", ["query:1"])]
+    assert g["queries"]["query:1"]["runs"] == 6 and g["queries"]["query:1"]["read"]
+    assert not g["queries"]["query:3"]["read"]  # sqlglot can't read it: no join, and no gap
+    assert not g["gaps"]
+
+
+def test_a_join_to_an_object_outside_the_snapshot_draws_it(model):
+    from ucmodel.lineage import Query
+    found = Lineage([], [], [], [], {}, [Query(
+        "SELECT 1 FROM kinds.orders AS o JOIN other.sales.regions AS r ON r.region = o.region",
+        ["kinds.orders", "other.sales.regions"], 1, 1, "2026-11-04T17:00:00Z")])
+    g = explore.graph(model, "ucstate_test", TAKEN, found)
+    assert [(j["a"], j["b"]) for j in g["joins"]] == [
+        ("kinds.orders.region", "other.sales.regions.region")]
+    assert [c["name"] for c in nodes(g)["other.sales.regions"]["columns"]] == ["region"]
+
+
+def test_sizes_go_to_their_tables(model):
+    from ucmodel.lineage import Size
+    found = Lineage([], [], sizes=[Size("kinds.orders", 300, 3, "2026-11-04",
+                                        [("2026-11-01", 100), ("2026-11-04", 300)])])
+    g = explore.graph(model, "ucstate_test", TAKEN, found)
+    assert nodes(g)["kinds.orders"]["size"] == {
+        "bytes": 300, "files": 3, "on": "2026-11-04",
+        "history": [["2026-11-01", 100], ["2026-11-04", 300]]}
+    assert nodes(g)["kinds.top_regions"]["size"] is None
+    assert g["meta"]["sizes"] is True
+    assert explore.graph(model, "ucstate_test", TAKEN, Lineage([], []))["meta"]["sizes"] is False
+
+
+def test_a_jobs_tasks_and_each_writers_task_and_reads_go_to_the_page(model):
+    from ucmodel.lineage import Job, Task
+    found = Lineage([], [], [wrote(
+        "kinds.orders", "INSERT INTO kinds.orders SELECT order_id, region, amount, NULL "
+        "FROM kinds.orders_feed", source={"job_id": "11", "task_key": "daily"})], [], {},
+        jobs=[Job("11", [Task("daily", [], "notebook", "/Shared/daily"),
+                         Task("refresh", ["daily"], "pipeline", "p1")])])
+    g = explore.graph(model, "ucstate_test", TAKEN, found)
+    writer = next(w for w in nodes(g)["kinds.orders"]["writers"] if w["ran"])
+    assert writer["ran"]["source"] == {"job_id": "11", "task_key": "daily"}
+    assert writer["reads"] == ["kinds.orders_feed"]
+    assert g["jobs"] == {"11": [
+        {"key": "daily", "depends_on": [], "runs": "notebook", "path": "/Shared/daily"},
+        {"key": "refresh", "depends_on": ["daily"], "runs": "pipeline", "path": "p1"}]}

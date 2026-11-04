@@ -444,6 +444,21 @@ def analyse(via: str, sql: str, model: dict[str, dict], catalog: str, *,
     return st
 
 
+def query_joins(sql: str, model: dict[str, dict], catalog: str) -> list[tuple[str, str]] | None:
+    """The column pairs a query joins on, as `Statement.joins`, or None when sqlglot can't
+    read it. A query that writes nothing has no lineage, but its joins say how the
+    objects it reads go together."""
+    try:
+        tree = sqlglot.parse_one(sql, read=D)
+    except SqlglotError:
+        return None
+    if isinstance(tree, exp.Command):
+        return None
+    _unstream(tree)
+    _Names(catalog, model).rewrite(tree, {c.alias for c in tree.find_all(exp.CTE)})
+    return sorted(set(_joins(tree)))
+
+
 def statements(model: dict[str, dict], catalog: str,
                files: Iterable[tuple[str, str]] = (),
                progress: Progress | None = None,

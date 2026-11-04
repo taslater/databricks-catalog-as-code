@@ -32,8 +32,9 @@ It needs Graphviz's `dot` and `neato` on the PATH, like `ucatlas draw`.
 **The page holds what the snapshot holds**, owners' names and view
 definitions included, plus the text of the SQL files given. A snapshot read
 with a warehouse also holds the statements from query history, with any
-values written in them, and who ran each. Keep the page where the catalog's
-metadata, and that SQL, may go.
+values written in them, who ran each, and the paths of the notebooks and
+files its jobs run, which often hold a person's name. Keep the page where
+the catalog's metadata, and that SQL, may go.
 
 ## Where the edges come from
 
@@ -66,7 +67,10 @@ came from:
   counts as a write for "last written". Query history covers SQL warehouses
   and serverless compute; a pipeline's refreshes have no statement there,
   so a materialized view's or a streaming table's panel names the pipeline
-  that refreshes it instead.
+  that refreshes it instead. The queries that read two or more objects and
+  wrote nothing, the ten most run for each set of objects, give the joins
+  people make (see Who reads an object). They have no lineage of their own,
+  so one sqlglot can't read is no gap.
 
 A materialized view and a streaming table hold data, so, as for a table,
 the lineage says when each was last written (refreshed, for them). A view
@@ -103,9 +107,36 @@ gaps there are.
 
 With query history, an object's panel also says how many queries read it
 in the last 90 days, by how many people, and when last: queries that wrote
-nothing, as the lineage recorded them. A statement that reads an object to
+nothing, as the lineage recorded them. A run answered from a warehouse's
+result cache records no lineage, so each query's runs are counted in query
+history by its text, cached runs included. A statement that reads an object to
 write another is upstream of that one instead. An object no query read in
 that time says so.
+
+**Joined with** lists the tables an object is joined to, on which columns,
+and where each join comes from: a declared key, a statement that writes, or
+queries that ran, with how many times. Route uses the same joins, so a path
+analysts already take is preferred.
+
+## Jobs
+
+A statement from query history that ran in a job says which job, which task
+and, from the jobs API, what the task runs (a notebook, a SQL file, a
+pipeline), with the path shortened to its folder and file. An object's
+writers from one job are listed together under it. A job's name opens its
+panel: its tasks in the order they run, what each wrote and read, and the
+objects its pipeline tasks refresh. Those objects are highlighted wherever
+they are drawn, and **Show them all** brings them into Explore. The map's
+Compass lists every job the snapshot has a statement from.
+
+## Size
+
+With a warehouse, a snapshot holds each table's size from
+`system.storage.table_metrics_history`: the data in its current version and
+the files that hold it, on the latest day the metrics have, and the days in
+the last 90 it changed. A table's panel says how much it holds and how that
+changed, with a small chart. The metrics have each table once a day, so a
+table created since has no size yet.
 
 ## The three modes
 
@@ -130,8 +161,13 @@ that time says so.
   per schema and every table. A catalog too big to read whole at one scale
   opens on its schemas; double-click a schema to open its tables.
 
-Color shows each object's schema, or how recently the lineage saw it
-written, as of the snapshot.
+Color shows each object's schema, how recently the lineage saw it written,
+how many queries read it, or how much it holds, as of the snapshot. Reads
+and size go in four steps on a log scale from the least to the most in the
+catalog, with a gray for none, and the map's cards then say the number. The
+Compass, the map's panel with nothing selected, lists the most read
+objects, those no query read with nothing downstream either, which may be
+unused, and the largest tables.
 
 ## Layouts
 
@@ -165,16 +201,16 @@ second, and the map in under one.
 A snapshot holds structure and the lineage the platform recorded, and that
 is all the explorer reads. It doesn't know what only a warehouse can say:
 
-- how big a table is, or what a write did to it beyond its SQL (rows
-  written, files), which `DESCRIBE DETAIL`, `DESCRIBE HISTORY` and
-  `system.storage.table_metrics_history` say;
+- what a write did to a table beyond its SQL (rows written, files), which
+  `DESCRIBE HISTORY` says; and, without a warehouse, how big a table is;
 - what the data looks like: row counts, nulls, distinct values, ranges;
 - whether a declared key holds. Primary and foreign keys in Unity Catalog
   are informational, not enforced, so the explorer takes them as declared;
 - without query history, which job, notebook or query wrote or read a
   table. With it, a job and a pipeline go by their names, from
-  `system.lakeflow`, which has a job some time after it is created; a
-  notebook, a dashboard and a saved query go by their ids.
+  `system.lakeflow`, which has a job some time after it is created, and a
+  job's notebook or file by its path; a notebook run outside a job, a
+  dashboard and a saved query go by their ids.
 
 The checks Compare writes are where to start with the first three.
 
