@@ -146,6 +146,11 @@ class Progress:
             else:
                 self._write(s.ended())
 
+    def note(self, text: str) -> None:
+        """One line between steps, such as what a read fell back to."""
+        if self.enabled:
+            self._write(text)
+
     def _write(self, text: str) -> None:
         self.stream.write(text + "\n")
         self.stream.flush()

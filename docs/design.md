@@ -72,7 +72,10 @@ metric view's is YAML), and its tags, and its pipeline's id in `meta`. It
 keeps no properties, since a pipeline's change at every refresh. `ucstate` never
 plans a change to one; reports and the drawings show them.
 
-`ucmodel.reader` reads a catalog over REST with no warehouse. The table
+`ucmodel.reader` reads a catalog over REST with no warehouse. Given one,
+`ucmodel.bulk` reads tags, direct grants and functions' names from
+`system.information_schema`, and lineage from the `system.access` lineage
+tables, and the reader takes them from there; the model is the same. The table
 endpoint carries defaults, generation expressions and identity in each column's
 `type_json` metadata, CHECKs as `delta.constraints.<name>` properties, and
 masks and row filters in their own fields.
