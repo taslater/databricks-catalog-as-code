@@ -3,6 +3,32 @@
 All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.1.0
+
+The first release that isn't a pre-release. `ucmodel` and `ucatlas` are
+beta and `ucstate` is alpha, as their classifiers say.
+
+### ucmodel
+
+- `snapshot` writes its progress to stderr: listing schemas, reading their
+  objects, and reading table and column lineage. On a terminal that is one
+  line drawn again in place, with an estimate of the time left; elsewhere,
+  a line as each step starts and ends. `--quiet` turns it off.
+- Schemas are listed eight at a time, as objects already were, and every
+  object of every schema is read in one pool rather than schema by schema.
+  What a read returns is unchanged.
+
+### ucatlas
+
+- `draw` and `explore` write their progress the same way: reading the
+  catalog (`draw --catalog`), reading the SQL, laying out, and drawing.
+  `--quiet` turns it off.
+- Needs ucmodel 0.1.0.
+
+### ucstate
+
+- No changes. Released again so that the three packages keep one version.
+
 ## 0.1.0a2
 
 ### ucatlas

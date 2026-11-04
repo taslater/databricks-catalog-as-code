@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import astuple, dataclass, field
 
+from .progress import Progress
 from .workspace import Workspace
 
 API = "/api/2.0/lineage-tracking"
@@ -50,14 +51,21 @@ class Lineage:
         return cls([Edge(*e) for e in data["tables"]], [Edge(*e) for e in data["columns"]])
 
 
-def read(ws: Workspace, catalog: str, model: dict[str, dict]) -> Lineage:
+def read(ws: Workspace, catalog: str, model: dict[str, dict],
+         progress: Progress | None = None) -> Lineage:
+    p = progress or Progress.off()
     objects = [o for o in model.values() if o["kind"] in ("table", "view")]
-    tables = ws.map(lambda o: table_edges(
-        catalog, o["name"], ws.get(f"{API}/table-lineage", table_name=f"{catalog}.{o['name']}")),
-        objects)
+    with p.step("reading table lineage", len(objects), ("table or view", "tables and views")) \
+            as step:
+        tables = ws.map(lambda o: table_edges(
+            catalog, o["name"],
+            ws.get(f"{API}/table-lineage", table_name=f"{catalog}.{o['name']}")),
+            objects, done=lambda o: step.tick(detail=o["name"]))
     columns = [(o["name"], c["name"]) for o in objects for c in o["columns"]]
-    found = ws.map(lambda tc: column_edges(catalog, *tc, ws.get(
-        f"{API}/column-lineage", table_name=f"{catalog}.{tc[0]}", column_name=tc[1])), columns)
+    with p.step("reading column lineage", len(columns), "columns") as step:
+        found = ws.map(lambda tc: column_edges(catalog, *tc, ws.get(
+            f"{API}/column-lineage", table_name=f"{catalog}.{tc[0]}", column_name=tc[1])),
+            columns, done=lambda tc: step.tick(detail=tc[0]))
     return Lineage(_merge(tables), _merge(found))
 
 

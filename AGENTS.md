@@ -23,7 +23,7 @@ diagrams in `docs/diagrams.md`, and the explorer in `docs/explorer.md`.
 
 ```text
 packages/ucmodel/src/ucmodel/    workspace, reader, normalise, model, compiler, sqltext, lineage,
-                                 snapshot, report, cli, samples/
+                                 snapshot, report, progress, cli, samples/
 packages/ucstate/src/ucstate/    project, intent, choices, render, shadow, plan, state, apply, cli
 packages/ucstate/scenarios/      the planner's test corpus (before/, after/, expect.yml, recorded.json)
 packages/ucstate/examples/       what `ucstate import` writes for ucmodel's samples
@@ -60,6 +60,12 @@ one package. The `ucatlas` tests that run `dot` skip without Graphviz.
   payloads live in `ucmodel.samples`, which ships in `ucmodel`'s wheel.
 - A new check needs a known-bad control: an input that must fail it. A
   harness that passes the control is broken.
+- `saved.SavedWorkspace` (in `packages/ucmodel/tests`) answers the reader's
+  REST calls from a saved sample, so a whole read runs offline, and
+  `reader.read` must give back the sample it was served.
+- Library functions take `progress=` and write nothing without one. Only
+  the command lines make a `Progress`, so a test sees progress only when it
+  passes one or runs a command.
 
 ## Offline and live
 

@@ -22,8 +22,10 @@ import random
 import shutil
 import subprocess
 from collections import defaultdict
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from itertools import pairwise
+
+from ucmodel.progress import Progress
 
 W, H = 250, 30  # a card with its header only, in px; a view keeps the order, not the size
 PX = 72  # Graphviz works in inches
@@ -200,7 +202,7 @@ def through(routes: Sequence[Route], pos: dict[str, Point], size: tuple[int, int
 
 def layered(nodes: Sequence[dict], edges: Sequence[dict], *, direction: str, group: bool,
             tries: int, whole: bool = False, size: tuple[int, int] = (W, H),
-            gap: int = 24, layer: int = 90) -> dict:
+            gap: int = 24, layer: int = 90, tick: Callable[[], object] | None = None) -> dict:
     """The best of `tries` drawings by `dot`. With `whole`, keep its curves and cluster
     boxes too, for a view of everything that the page draws as built."""
     best: tuple | None = None
@@ -220,6 +222,8 @@ def layered(nodes: Sequence[dict], edges: Sequence[dict], *, direction: str, gro
         first = score if first is None else first
         if best is None or score < best[0]:
             best = (score, counted, pos, routes, clusters, extent)
+        if tick:
+            tick()
     assert best is not None
     score, counted, pos, routes, clusters, extent = best
 
@@ -238,7 +242,8 @@ def layered(nodes: Sequence[dict], edges: Sequence[dict], *, direction: str, gro
     return out
 
 
-def free(nodes: Sequence[dict], edges: Sequence[dict], *, tries: int) -> dict:
+def free(nodes: Sequence[dict], edges: Sequence[dict], *, tries: int,
+         tick: Callable[[], object] | None = None) -> dict:
     """The best of `tries` stress layouts by `neato`, scored on straight lines."""
     # Graphviz's overlap removal takes most of a minute at 900 objects; the page removes
     # overlaps in each view anyway (keeping which object is left of, or above, which)
@@ -256,6 +261,8 @@ def free(nodes: Sequence[dict], edges: Sequence[dict], *, tries: int) -> dict:
         first = score if first is None else first
         if best is None or score < best[0]:
             best = (score, counted, pos)
+        if tick:
+            tick()
     assert best is not None
     return {"pos": {k: [round(x), round(y)] for k, (x, y) in best[2].items()},
             "crossings": best[1][0], "through": best[1][1],
@@ -263,30 +270,38 @@ def free(nodes: Sequence[dict], edges: Sequence[dict], *, tries: int) -> dict:
             "tries": tries}
 
 
-def build(nodes: Sequence[dict], edges: Sequence[dict], tries: int | None = None) -> dict:
+def build(nodes: Sequence[dict], edges: Sequence[dict], tries: int | None = None,
+          progress: Progress | None = None) -> dict:
     """Every arrangement the page offers, and the map. `nodes` have `id`, `kind` and
     `schema`; `edges` have `s`, `t` and `kind` (flow, join, runtime or fk)."""
     given, tries = tries, tries or tries_for(len(nodes))
-    out = {}
-    for direction in ("right", "down"):
-        for group in (False, True):
-            out[f"{direction}{'/grouped' if group else ''}"] = layered(
-                nodes, edges, direction=direction, group=group, tries=tries)
-    out["free"] = free(nodes, edges, tries=tries)
     # the map: objects in the catalog only (no files or outside objects), no keys
     tables = [n for n in nodes if n["kind"] in ("table", "view")]
     ids = {n["id"] for n in tables}
     inside = [e for e in edges if e["kind"] != "fk" and e["s"] in ids and e["t"] in ids]
-    out["map"] = layered(tables, inside, direction="right", group=True, tries=tries, whole=True,
-                         size=(180, 34), gap=14, layer=50)
-    out["schemas"] = overview(tables, inside, tries=given)
+    schemas = len({n["schema"] for n in tables})
+    total = 6 * tries + (given or tries_for(schemas))
+    out = {}
+    with (progress or Progress.off()).step("laying out", total, "tries") as step:
+        def tick(name: str) -> Callable[[], None]:
+            return lambda: step.tick(detail=name)
+        for direction in ("right", "down"):
+            for group in (False, True):
+                name = f"{direction}{'/grouped' if group else ''}"
+                out[name] = layered(nodes, edges, direction=direction, group=group, tries=tries,
+                                    tick=tick(name))
+        out["free"] = free(nodes, edges, tries=tries, tick=tick("free"))
+        out["map"] = layered(tables, inside, direction="right", group=True, tries=tries,
+                             whole=True, size=(180, 34), gap=14, layer=50, tick=tick("map"))
+        out["schemas"] = overview(tables, inside, tries=given, tick=tick("schemas"))
     return out
 
 
 SCHEMA_CARD = (220, 58)
 
 
-def overview(tables: Sequence[dict], edges: Sequence[dict], *, tries: int | None = None) -> dict:
+def overview(tables: Sequence[dict], edges: Sequence[dict], *, tries: int | None = None,
+             tick: Callable[[], object] | None = None) -> dict:
     """The map's overview: one box per schema, and an edge wherever a table's data
     reaches another schema's, weighted by how many table edges it stands for. A big
     catalog's map is too tall to read whole, since its schemas stack, so the page
@@ -302,4 +317,4 @@ def overview(tables: Sequence[dict], edges: Sequence[dict], *, tries: int | None
                    [{"s": a, "t": b, "kind": "flow", "weight": min(w, 100)}
                     for (a, b), w in sorted(weight.items())],
                    direction="right", group=False, tries=tries or tries_for(len(names)), whole=True,
-                   size=SCHEMA_CARD, gap=30, layer=90)
+                   size=SCHEMA_CARD, gap=30, layer=90, tick=tick)

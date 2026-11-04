@@ -29,6 +29,7 @@ from importlib.resources import files
 from pathlib import Path
 
 from ucmodel.lineage import Lineage
+from ucmodel.progress import Progress
 
 from . import layout, sqllineage
 
@@ -75,7 +76,7 @@ def _stub(nid: str, catalog_schemas: set[str]) -> dict:
 
 def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
           found: Lineage | None = None, sql_files: list[tuple[str, str]] | None = None,
-          *, snapshot: str | None = None) -> dict:
+          *, snapshot: str | None = None, progress: Progress | None = None) -> dict:
     """The page's data: objects, column and table edges, declared keys, joins, and
     where lineage couldn't be read."""
     objects = sqllineage.objects(model)
@@ -116,7 +117,7 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
             n["columns"].append({"name": col, "type": "?", "comment": None, "nullable": True,
                                  "tags": {}})
 
-    sts = sqllineage.statements(model, catalog, sql_files or [])
+    sts = sqllineage.statements(model, catalog, sql_files or [], progress)
     column_edges: dict[tuple[str, str, str], dict] = {}
     table_edges: dict[tuple[str, str], dict] = {}
     gaps = []
@@ -224,9 +225,10 @@ def layout_edges(g: dict) -> list[dict]:
     return out
 
 
-def write(g: dict, out: Path, *, tries: int | None = None) -> Path:
+def write(g: dict, out: Path, *, tries: int | None = None,
+          progress: Progress | None = None) -> Path:
     """Lay `g` out and write the page into `out`. Returns the page's path."""
-    g = {**g, "layouts": layout.build(g["nodes"], layout_edges(g), tries)}
+    g = {**g, "layouts": layout.build(g["nodes"], layout_edges(g), tries, progress)}
     out.mkdir(parents=True, exist_ok=True)
     page = (ASSETS / PAGE).read_text(encoding="utf-8")
     for name in VENDOR:

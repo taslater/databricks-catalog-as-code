@@ -897,7 +897,7 @@ dev = [
 
 [[package]]
 name = "ucatlas"
-version = "0.1.0a2"
+version = "0.1.0"
 source = { editable = "packages/ucatlas" }
 dependencies = [
     { name = "sqlglot" },
@@ -912,7 +912,7 @@ requires-dist = [
 
 [[package]]
 name = "ucmodel"
-version = "0.1.0a2"
+version = "0.1.0"
 source = { editable = "packages/ucmodel" }
 dependencies = [
     { name = "databricks-sdk" },
@@ -927,7 +927,7 @@ requires-dist = [
 
 [[package]]
 name = "ucstate"
-version = "0.1.0a2"
+version = "0.1.0"
 source = { editable = "packages/ucstate" }
 dependencies = [
     { name = "pyyaml" },

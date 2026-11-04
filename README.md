@@ -2,7 +2,10 @@
 
 Look at a Databricks Unity Catalog, and manage it as SQL files in git.
 
-Status: alpha (0.1.0a2). It has been tested only on Databricks Free Edition.
+Status: 0.1.0. `ucmodel` and `ucatlas`, which only read a catalog, are beta;
+`ucstate`, which changes one, is alpha. All three have been tested only on
+Databricks Free Edition. Until 1.0, a minor version (0.2, 0.3) may change
+options and file formats.
 
 ## Three kinds of file, each with one writer
 
@@ -159,6 +162,13 @@ uv run ucatlas explore --snapshot snapshots/NEWER.json --sql jobs/ -o explorer
   to the column, from the SQL and from what ran, with declared keys and
   joins, to explore, compare tables and map the catalog. `--sql` adds the
   statements that load it. See [`docs/explorer.md`](docs/explorer.md).
+- Each step that takes a while (listing schemas, reading their objects,
+  reading table and column lineage, reading the SQL, laying out, drawing)
+  writes its progress to stderr. On a terminal that is one line, drawn again
+  as items finish, with an estimate of the time left. In a log, it is a line
+  when each step starts and one when it ends. `--quiet`, given before the
+  command (`ucmodel --quiet snapshot ...`), turns it off. Progress never goes
+  to stdout, so a snapshot's path there stays the only thing on its line.
 
 ### The local UI
 

@@ -10,6 +10,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import report
+from .progress import Progress
 from .snapshot import SnapshotError, load, take, write
 from .workspace import NoCredentials, Workspace
 
@@ -19,6 +20,8 @@ def main(argv: list[str] | None = None) -> int:
                                      description="Snapshots of a Unity Catalog, and reports.")
     parser.add_argument("--profile",
                         help="Databricks CLI profile. Without one, DATABRICKS_* variables are used")
+    parser.add_argument("-q", "--quiet", action="store_true",
+                        help="don't write progress to stderr")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("snapshot", help="read a catalog over REST and write it to a file")
@@ -50,7 +53,8 @@ def main(argv: list[str] | None = None) -> int:
 def cmd_snapshot(ws: Workspace, args: argparse.Namespace) -> int:
     """Prints the file's path, and what it holds on stderr."""
     start = time.monotonic()
-    s = take(ws, args.catalog, args.schema, with_lineage=not args.no_lineage)
+    s = take(ws, args.catalog, args.schema, with_lineage=not args.no_lineage,
+             progress=Progress.off() if args.quiet else Progress())
     path = write(s, args.out)
     kinds = Counter(key.split(":")[0] for key in s.model)
     held = ", ".join(f"{n} {k}{'s' if n != 1 else ''}" for k, n in sorted(kinds.items()))
