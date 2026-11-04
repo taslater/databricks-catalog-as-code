@@ -159,7 +159,7 @@ def test_explore_refuses_an_edited_snapshot(no_config, capsys, tmp_path):
 
 
 def test_explore_without_graphviz_is_a_short_error(no_config, capsys, tmp_path, monkeypatch):
-    monkeypatch.setattr(shutil, "which", lambda name: None)
+    monkeypatch.setattr(shutil, "which", lambda *args, **kwargs: None)
     path = demo_snapshot(tmp_path)
     assert cli.main(["explore", "--snapshot", str(path), "-o", str(tmp_path / "x")]) == 2
     assert capsys.readouterr().err.splitlines()[-1].startswith("ucatlas: Graphviz isn't installed")

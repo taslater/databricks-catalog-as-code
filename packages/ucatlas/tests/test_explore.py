@@ -210,7 +210,7 @@ def test_fewer_tries_for_a_bigger_catalog():
 
 
 def test_without_graphviz_the_error_says_how_to_get_it(monkeypatch):
-    monkeypatch.setattr(shutil, "which", lambda name: None)
+    monkeypatch.setattr(shutil, "which", lambda *args, **kwargs: None)
     with pytest.raises(layout.LayoutError, match="Graphviz isn't installed"):
         layout.build([{"id": "s.a", "kind": "table", "schema": "s"}], [], tries=1)
 

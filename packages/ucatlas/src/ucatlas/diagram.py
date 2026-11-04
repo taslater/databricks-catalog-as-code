@@ -22,7 +22,6 @@ offline. `write_site` runs Graphviz's `dot` to make the SVGs.
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 from datetime import datetime
 from html import escape
@@ -31,6 +30,8 @@ from pathlib import Path
 from ucmodel.lineage import Lineage
 from ucmodel.model import depends_on
 from ucmodel.progress import Progress
+
+from . import graphviz
 
 TABLE, VIEW, STUB = "#dbe8f7", "#e3f1dc", "#f2f2f2"
 WIDEST_TYPE = 40  # the characters of a type the drawing shows; the page has it all
@@ -208,10 +209,9 @@ def _href(name: str, here: str | None = None) -> str:
 def svg(source: str) -> str:
     """Graphviz's SVG for a drawing. A warning from `dot` is an error: it means
     the drawing has something `dot` didn't understand."""
-    dot = shutil.which("dot")
+    dot = graphviz.find("dot")
     if dot is None:
-        raise DiagramError("Graphviz isn't installed: brew install graphviz, "
-                           "or apt-get install graphviz")
+        raise DiagramError(graphviz.missing("dot"))
     done = subprocess.run([dot, "-Tsvg"], input=source, capture_output=True, text=True)
     if done.returncode or done.stderr.strip():
         raise DiagramError(f"dot: {done.stderr.strip()}")

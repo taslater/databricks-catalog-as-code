@@ -19,13 +19,14 @@ from __future__ import annotations
 
 import json
 import random
-import shutil
 import subprocess
 from collections import defaultdict
 from collections.abc import Callable, Iterator, Sequence
 from itertools import pairwise
 
 from ucmodel.progress import Progress
+
+from . import graphviz
 
 W, H = 250, 30  # a card with its header only, in px; a view keeps the order, not the size
 PX = 72  # Graphviz works in inches
@@ -79,10 +80,9 @@ def _source(nodes: Sequence[dict], edges: Sequence[dict], *, direction: str, gro
 
 
 def _run(engine: str, source: str, *args: str) -> dict:
-    exe = shutil.which(engine)
+    exe = graphviz.find(engine)
     if exe is None:
-        raise LayoutError("Graphviz isn't installed: brew install graphviz, "
-                          "or apt-get install graphviz")
+        raise LayoutError(graphviz.missing(engine))
     done = subprocess.run([exe, "-Tjson", *args], input=source, capture_output=True, text=True)
     if done.returncode:
         raise LayoutError(f"{engine}: {done.stderr.strip()[:300]}")
