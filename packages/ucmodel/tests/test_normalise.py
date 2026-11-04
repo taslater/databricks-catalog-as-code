@@ -84,3 +84,39 @@ def test_unsupported_objects_are_kept_but_marked():
     t["info"] = {**t["info"], "table_type": "MATERIALIZED_VIEW"}
     obj = normalise(raw)["unsupported:probe_lineage.customers"]
     assert obj["type"].startswith("MATERIALIZED_VIEW")
+
+
+# `kinds` is built by `samples/kinds.sql`: a managed table, with a materialized view,
+# a streaming table and a metric view over it, and a view reading the materialized view.
+@pytest.fixture(scope="module")
+def kinds() -> dict:
+    return samples.model("kinds")
+
+
+@pytest.mark.parametrize(("name", "type_", "columns", "starts"), [
+    ("region_totals", "MATERIALIZED_VIEW", ["region", "total", "orders"],
+     "SELECT region, sum(amount) AS total"),
+    ("orders_feed", "STREAMING_TABLE", ["order_id", "region", "amount"],
+     "SELECT order_id, region, amount\nFROM STREAM(kinds.orders)"),
+    ("order_metrics", "METRIC_VIEW", ["region", "revenue", "order_count"],
+     "version: 1.1\n\nsource: kinds.orders"),
+])
+def test_an_object_outside_the_model_keeps_its_columns_and_definition(
+        kinds, name, type_, columns, starts):
+    obj = kinds[f"unsupported:kinds.{name}"]
+    assert obj["type"] == type_
+    assert [c["name"] for c in obj["columns"]] == columns
+    assert obj["definition"].startswith(starts)  # the catalog stripped, as in a view's
+    assert set(obj["columns"][0]) == {"name", "type", "nullable", "comment", "tags"}
+    assert "properties" not in obj  # a pipeline's properties change at every refresh
+
+
+def test_a_pipelines_objects_name_their_pipeline_in_meta(kinds):
+    assert kinds["unsupported:kinds.region_totals"]["meta"]["pipeline_id"]
+    assert "pipeline_id" not in kinds["unsupported:kinds.order_metrics"]["meta"]
+    assert "pipeline_id" not in kinds["table:kinds.orders"]["meta"]
+
+
+def test_the_samples_other_objects_are_ordinary(kinds):
+    assert {k for k, o in kinds.items() if o["kind"] != "unsupported"} == {
+        "schema:kinds", "table:kinds.orders", "view:kinds.top_regions"}

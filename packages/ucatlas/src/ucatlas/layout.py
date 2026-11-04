@@ -34,6 +34,9 @@ Point = tuple[float, float]
 Route = tuple[str, str, list[Point]]
 
 
+OUTSIDE = ("files", "external")  # nodes for what an edge reaches outside the catalog
+
+
 class LayoutError(Exception):
     pass
 
@@ -276,7 +279,7 @@ def build(nodes: Sequence[dict], edges: Sequence[dict], tries: int | None = None
     `schema`; `edges` have `s`, `t` and `kind` (flow, join, runtime or fk)."""
     given, tries = tries, tries or tries_for(len(nodes))
     # the map: objects in the catalog only (no files or outside objects), no keys
-    tables = [n for n in nodes if n["kind"] in ("table", "view")]
+    tables = [n for n in nodes if n["kind"] not in OUTSIDE]
     ids = {n["id"] for n in tables}
     inside = [e for e in edges if e["kind"] != "fk" and e["s"] in ids and e["t"] in ids]
     schemas = len({n["schema"] for n in tables})

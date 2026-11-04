@@ -64,6 +64,14 @@ partitions, declared properties, tags, grants, row filter and comment. A view
 holds its text, column comments and schema-binding mode, and a function its
 signature, body and language. The live model adds `table_id`.
 
+An object of a type the tools don't manage (a materialized view, a streaming
+table, a metric view, an external or foreign table, an external volume) is
+kept as `unsupported`, with its type. A table-like one keeps its columns
+(name, type, nullability, comment, tags), its definition when it has one (a
+metric view's is YAML), and its tags, and its pipeline's id in `meta`. It
+keeps no properties, since a pipeline's change at every refresh. `ucstate` never
+plans a change to one; reports and the drawings show them.
+
 `ucmodel.reader` reads a catalog over REST with no warehouse. The table
 endpoint carries defaults, generation expressions and identity in each column's
 `type_json` metadata, CHECKs as `delta.constraints.<name>` properties, and

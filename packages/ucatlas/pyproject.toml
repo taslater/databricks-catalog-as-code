@@ -20,10 +20,12 @@ classifiers = [
     "Topic :: Database",
     "Typing :: Typed",
 ]
-# It also needs Graphviz's `dot` on the PATH. The explorer reads SQL with sqlglot directly.
+# It also needs Graphviz (see ucatlas.graphviz). The explorer reads SQL with sqlglot directly,
+# and a metric view's YAML with PyYAML.
 dependencies = [
     "ucmodel>=0.1.0,<0.2",
     "sqlglot>=30.27,<31",
+    "pyyaml>=6",
 ]
 
 [project.urls]

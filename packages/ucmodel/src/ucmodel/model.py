@@ -24,6 +24,12 @@ made.
 `depends_on` gives the objects one needs to exist first, as far as the
 model shows. The planner orders its changes by it, and the diagrams draw a
 view's reads from it.
+
+`tabular` says whether an object has columns to read: a table, a view, or an
+object outside the model that the platform lists with them (a materialized
+view, a streaming table, a metric view, an external or foreign table).
+Lineage and the drawings cover all of them; only ucstate leaves the last
+ones alone.
 """
 
 from __future__ import annotations
@@ -115,6 +121,12 @@ def _columns(key: str, d: list[dict], a: list[dict]) -> list[Difference]:
                 diffs.append(Difference(key, f"columns.{dc['name']}.{attr}", dc.get(attr),
                                         lc.get(attr)))
     return diffs
+
+
+def tabular(obj: dict) -> bool:
+    """A table, a view, or an object outside the model with columns."""
+    return obj["kind"] in ("table", "view") or (obj["kind"] == "unsupported"
+                                                and bool(obj.get("columns")))
 
 
 def depends_on(key: str, obj: dict) -> set[str]:

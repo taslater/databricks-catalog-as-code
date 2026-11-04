@@ -109,3 +109,23 @@ def test_diff_of_an_edited_snapshot_is_refused(tmp_path, capsys):
     path.write_text(path.read_text().replace("One row per customer", "One row per client"))
     assert cli.main(["diff", str(path), str(path)]) == 2
     assert "changed after it was taken" in capsys.readouterr().err
+
+
+def test_a_snapshot_names_what_is_outside_the_model_by_its_type(monkeypatch, capsys, tmp_path):
+    taken = make("ucstate_test", ["kinds"], datetime(2026, 11, 4, tzinfo=UTC),
+                 samples.model("kinds"))
+    monkeypatch.setattr(Workspace, "connect", classmethod(lambda cls, profile: NoCatalogs()))
+    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, with_lineage, progress: taken)
+    assert cli.main(["--profile", "p", "snapshot", "--catalog", "ucstate_test",
+                     "-o", f"{tmp_path}/"]) == 0
+    assert capsys.readouterr().err.startswith(
+        f"{taken.describe()}: 1 materialized view, 1 metric view, 1 schema, 1 streaming table, "
+        "1 table, 1 view; no lineage, read in ")
+
+
+@pytest.mark.parametrize(("type_", "said"), [
+    ("EXTERNAL DELTA", "external delta table"), ("FOREIGN", "foreign table"),
+    ("EXTERNAL VOLUME", "external volume"), ("STREAMING_TABLE", "streaming table")])
+def test_an_object_outside_the_model_is_said_by_its_type(type_, said):
+    assert cli._said("unsupported:s.x", {"type": type_}) == said
+    assert cli._said("table:s.x", {}) == "table"  # the control: a modelled kind is its kind

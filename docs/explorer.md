@@ -1,7 +1,8 @@
 # The explorer
 
 `ucatlas explore` writes one interactive page for a whole snapshot: every
-table and view, how their columns are computed, which objects feed which,
+table and view, materialized view, streaming table, metric view and external
+or foreign table, how their columns are computed, which objects feed which,
 and how they join. It is for understanding a catalog's structure, not for
 changing it. It reads no workspace and no warehouse: a snapshot, and
 optionally the SQL files that load the catalog, are enough.
@@ -17,8 +18,8 @@ python3 -m http.server --bind 127.0.0.1 --directory explorer 8000
 - `--sql` is a SQL file, or a folder searched for `*.sql`. Give it once for
   each. Its statements that write tables add their lineage: what each
   `INSERT`, `MERGE` and `CREATE TABLE ... AS` reads, and how it computes each
-  column, and the files each `COPY INTO` loads. Without it, only the views'
-  definitions are read.
+  column, and the files each `COPY INTO` loads. Without it, only the
+  definitions the catalog holds are read.
 - `-o` is the folder to write (default `explorer`). The page is
   `index.html`, with the data inlined. Beside it go the two libraries it
   draws with, d3 and elkjs, and their licenses, so it works without
@@ -37,14 +38,25 @@ the catalog's metadata may go.
 Two sources, kept apart in the data so the page can say which one an edge
 came from:
 
-- **The SQL.** Each view's definition, and each statement in the `--sql`
-  files, read with sqlglot. They say how each column is computed (the
-  expression, and whether it aggregates), and which objects a statement
-  reads only to join or filter.
+- **The SQL.** Each view's, materialized view's and streaming table's
+  definition, and each statement in the `--sql` files, read with sqlglot.
+  They say how each column is computed (the expression, and whether it
+  aggregates), and which objects a statement reads only to join or filter.
+  `STREAM(t)` reads `t`. A metric view's YAML is read as one `SELECT` of its
+  dimensions and measures from its source and joins, so a measure links to
+  the columns it aggregates: the platform's lineage records nothing for a
+  metric view. A file's `CREATE` of an object the catalog holds a definition
+  of is skipped, since the catalog's definition wins.
 - **What ran.** The table and column lineage the platform recorded, which
   the snapshot holds with when each edge was last seen. It covers writes
   the SQL files don't, such as notebooks, but not how a column was
   computed.
+
+A materialized view and a streaming table hold data, so, as for a table,
+the lineage says when each was last written (refreshed, for them). A view
+and a metric view are computed when read. The lineage of a materialized
+view also names columns of its hidden backing table; a column edge to a
+column the snapshot's object doesn't have is left out.
 
 An edge both sources have is marked as seen. An edge only the lineage has is
 drawn in its own color, as "seen by the lineage, not in any SQL". An edge

@@ -105,7 +105,7 @@ def cmd_explore(args: argparse.Namespace) -> int:
     c = explore.counts(g)
     gaps = f"; {c['gaps']} statement{'s' if c['gaps'] != 1 else ''} with lineage gaps" \
         if c["gaps"] else ""
-    print(f"wrote {page}: {c.get('table', 0)} tables, {c.get('view', 0)} views, "
+    print(f"wrote {page}: {explore.objects_said(c)}, "
           f"{c['column edges']} column edges{gaps}. To look at it:\n"
           f"  python3 -m http.server --bind 127.0.0.1 --directory {args.out} 8000")
     if not s.lineage:
