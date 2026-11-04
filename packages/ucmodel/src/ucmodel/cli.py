@@ -50,13 +50,23 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
+def _said(key: str, obj: dict) -> str:
+    """An object's kind as a count names it: an object outside the model by its type,
+    as in `materialized view` or `external delta table`."""
+    kind = key.split(":")[0]
+    if kind != "unsupported":
+        return kind
+    words = obj["type"].lower().replace("_", " ")
+    return words if words.endswith(("table", "view", "volume")) else f"{words} table"
+
+
 def cmd_snapshot(ws: Workspace, args: argparse.Namespace) -> int:
     """Prints the file's path, and what it holds on stderr."""
     start = time.monotonic()
     s = take(ws, args.catalog, args.schema, with_lineage=not args.no_lineage,
              progress=Progress.off() if args.quiet else Progress())
     path = write(s, args.out)
-    kinds = Counter(key.split(":")[0] for key in s.model)
+    kinds = Counter(_said(key, obj) for key, obj in s.model.items())
     held = ", ".join(f"{n} {k}{'s' if n != 1 else ''}" for k, n in sorted(kinds.items()))
     if s.lineage is None:
         held += "; no lineage"

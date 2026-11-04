@@ -749,3 +749,14 @@ def test_a_rebuildable_table_is_created_after_the_tables_its_query_reads(live):
     fresh = {k: v for k, v in live.items() if k != ORDERS}
     keys = [c.key for c in plan(desired, fresh, files, CATALOG).changes if c.what == "create table"]
     assert keys == [ORDERS, "table:roundtrip.a_totals"]
+
+
+def test_objects_outside_the_model_are_never_dropped_even_when_unmanaged_ones_are():
+    live = samples.model("kinds")
+    desired = {k: o for k, o in live.items() if o["kind"] != "unsupported"}
+    result = plan_for(desired, live, unmanaged="drop")
+    assert result.changes == []
+    assert result.notes == [
+        "unsupported:kinds.order_metrics: METRIC_VIEW is outside the model",
+        "unsupported:kinds.orders_feed: STREAMING_TABLE is outside the model",
+        "unsupported:kinds.region_totals: MATERIALIZED_VIEW is outside the model"]

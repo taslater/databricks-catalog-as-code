@@ -2,8 +2,9 @@
 
 The lineage API (`ucmodel.lineage`) records what ran: which columns fed
 which, and when it last saw it. It doesn't record how. This module reads the
-SQL that writes each object, a view's definition or a statement in a SQL
-file, and works out for each column it writes:
+SQL that writes each object, a view's, a materialized view's or a streaming
+table's definition or a statement in a SQL file, and works out for each
+column it writes:
 
 - which source columns feed it, and the expressions in between, from the
   written column back towards its source (`[]` when it is copied as is);
@@ -20,6 +21,9 @@ sqlglot does the parsing and the lineage. What this module adds:
   becomes `files:<path>`;
 - `INSERT` maps the query's columns to the target's by position, and
   `MERGE` reads each assignment as `SELECT <value> FROM <using> JOIN <target>`;
+- a metric view's YAML is read as one `SELECT` of its dimensions and
+  measures, from its source and joins, filtered by its filter. The platform
+  records no lineage for a metric view, so this is all there is;
 - a statement sqlglot can't parse, or a column whose lineage it can't follow,
   is kept as an error on the statement. The explorer shows those, so missing
   lineage reads as missing rather than as nothing feeding the object.
@@ -33,12 +37,14 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 
 import sqlglot
+import yaml
 from sqlglot import exp
 from sqlglot.errors import SqlglotError
 from sqlglot.lineage import Node, lineage
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import build_scope
 
+from ucmodel.model import tabular
 from ucmodel.progress import Progress
 
 logging.getLogger("sqlglot").setLevel(logging.CRITICAL)
@@ -77,9 +83,55 @@ class Statement:
     errors: list[str] = field(default_factory=list)
 
 
+# objects outside the model whose definition is a query, as a view's is
+QUERIED = ("MATERIALIZED_VIEW", "STREAMING_TABLE")
+METRIC = "METRIC_VIEW"
+QUERY = re.compile(r"\s*\(?\s*(?:SELECT|WITH|FROM)\b", re.I)
+
+
 def objects(model: dict[str, dict]) -> dict[str, dict]:
-    """The model's tables and views, by two-part name."""
-    return {o["name"]: o for o in model.values() if o["kind"] in ("table", "view")}
+    """The model's objects with columns (tables, views, materialized views and the
+    like), by two-part name."""
+    return {o["name"]: o for o in model.values() if tabular(o)}
+
+
+def defined(obj: dict) -> str | None:
+    """How an object is defined, when it is: `query` (a view, a materialized view, a
+    streaming table) or `metric` (a metric view's YAML)."""
+    if not obj.get("definition"):
+        return None
+    if obj["kind"] == "view" or obj["kind"] == "unsupported" and obj["type"] in QUERIED:
+        return "query"
+    return "metric" if obj["kind"] == "unsupported" and obj["type"] == METRIC else None
+
+
+def metric_query(text: str, columns: list[str]) -> str:
+    """A metric view's YAML as one `SELECT`: `columns` in their order, each its
+    dimension's or measure's expression, from the source as `source` and each join,
+    nested ones too, by its name. A column with no expression is NULL. Raises
+    ValueError for YAML that isn't a metric view's."""
+    spec = yaml.safe_load(text)
+    if not isinstance(spec, dict) or not isinstance(spec.get("source"), str):
+        raise ValueError("it has no source")
+
+    def relation(src: str, alias: str) -> str:
+        return f"({src}) AS `{alias}`" if QUERY.match(src) else f"{src} AS `{alias}`"
+
+    def joins(js: list | None) -> Iterator[str]:
+        for j in js or []:
+            # PyYAML reads YAML 1.1, where the key `on` is the boolean true
+            cond = j.get("on", j.get(True))
+            on = (f" ON {cond}" if cond else
+                  " USING ({})".format(", ".join(j["using"])) if j.get("using") else "")
+            yield f" LEFT JOIN {relation(j['source'], j['name'])}{on}"
+            yield from joins(j.get("joins"))
+
+    exprs = {f["name"]: f["expr"] for group in ("dimensions", "measures")
+             for f in spec.get(group) or [] if isinstance(f, dict) and "expr" in f}
+    select = ", ".join(f"{exprs.get(c, 'NULL')} AS `{c}`" for c in columns)
+    where = f" WHERE {spec['filter']}" if spec.get("filter") else ""
+    return (f"SELECT {select} FROM {relation(spec['source'], 'source')}"
+            f"{''.join(joins(spec.get('joins')))}{where}")
 
 
 def glot_schema(model: dict[str, dict]) -> dict:
@@ -144,6 +196,20 @@ def _unread(via: str, sql: str, names: _Names, why: str, view: str | None) -> St
         except SqlglotError:
             target = None
     return Statement(via, "unread", target, sql, errors=[why])
+
+
+def _unstream(tree: exp.Expr) -> None:
+    """`STREAM(t) AS a` becomes `t AS a`: a stream reads the table's columns, and
+    sqlglot's lineage doesn't see through the subquery it parses `STREAM(t)` as."""
+    for s in list(tree.find_all(exp.Stream)):
+        inner = s.this
+        if isinstance(inner, exp.Subquery) and isinstance(inner.this, exp.Table):
+            table = inner.this.copy()
+            if alias := inner.args.get("alias"):
+                table.set("alias", alias.copy())
+            s.replace(table)
+        elif isinstance(inner, exp.Table):
+            s.replace(inner.copy())
 
 
 def _table_id(t: exp.Table) -> str | None:
@@ -287,6 +353,7 @@ def analyse(via: str, sql: str, model: dict[str, dict], catalog: str, *,
             names.use_catalog = t.db or names.use_catalog
             names.schema = t.name
         return None
+    _unstream(tree)
     ctes = {c.alias for c in tree.find_all(exp.CTE)}
     names.rewrite(tree, ctes)
 
@@ -369,26 +436,45 @@ def analyse(via: str, sql: str, model: dict[str, dict], catalog: str, *,
 def statements(model: dict[str, dict], catalog: str,
                files: Iterable[tuple[str, str]] = (),
                progress: Progress | None = None) -> list[Statement]:
-    """The lineage of every view's definition, and of each statement in `files`,
-    (name, text) pairs, that writes an object. A file's `CREATE VIEW` for a view the
-    model has is skipped: the definition the catalog holds wins."""
+    """The lineage of every definition (a view's, a materialized view's, a streaming
+    table's, a metric view's), and of each statement in `files`, (name, text) pairs,
+    that writes an object. A file's `CREATE VIEW` (or `MATERIALIZED VIEW`) for an object
+    the model has a definition of is skipped: the definition the catalog holds wins."""
     schema = glot_schema(model)
     files = list(files)
-    defined = [(name, obj) for name, obj in sorted(objects(model).items())
-               if obj["kind"] == "view" and obj.get("definition")]
+    definitions = [(name, obj, how) for name, obj in sorted(objects(model).items())
+                   if (how := defined(obj))]
     out = []
-    with (progress or Progress.off()).step("reading the SQL", len(defined) + len(files),
-                                           ("view or file", "views and files")) as step:
-        for name, obj in defined:
-            st = analyse(name, obj["definition"], model, catalog, schema=schema, view=name)
+    with (progress or Progress.off()).step(
+            "reading the SQL", len(definitions) + len(files),
+            ("definition or file", "definitions and files")) as step:
+        for name, obj, how in definitions:
+            st = (analyse(name, obj["definition"], model, catalog, schema=schema, view=name)
+                  if how == "query" else _metric(name, obj, model, catalog, schema))
             if st:
                 out.append(st)
             step.tick(detail=name)
-        views = {n for n, o in objects(model).items() if o["kind"] == "view"}
+        views = {name for name, _, _ in definitions}
         for fname, text in files:
             out += _file_statements(fname, text, model, catalog, schema, views)
             step.tick(detail=fname)
     return out
+
+
+def _metric(name: str, obj: dict, model: dict[str, dict], catalog: str,
+            schema: dict) -> Statement | None:
+    """A metric view's lineage, read from its YAML as a `SELECT` (see `metric_query`).
+    The statement keeps the YAML, as the definition the catalog holds."""
+    try:
+        sql = metric_query(obj["definition"], [c["name"] for c in obj["columns"]])
+    except (yaml.YAMLError, ValueError, KeyError, TypeError) as e:
+        return Statement(name, "unread", name, obj["definition"],
+                         errors=[f"its YAML can't be read as a metric view's: "
+                                 f"{str(e).splitlines()[0][:120]}"])
+    st = analyse(name, sql, model, catalog, schema=schema, view=name)
+    if st:
+        st.sql = obj["definition"]
+    return st
 
 
 def _file_statements(fname: str, text: str, model: dict[str, dict], catalog: str,
@@ -404,6 +490,6 @@ def _file_statements(fname: str, text: str, model: dict[str, dict], catalog: str
     out = []
     for i, sql in enumerate(parts, 1):
         st = analyse(f"{fname}:{i}", sql, model, catalog, names=names, schema=schema)
-        if st and not (st.kind == "view" and st.target in views):
+        if st and not (st.kind in ("view", "create") and st.target in views):
             out.append(st)
     return out

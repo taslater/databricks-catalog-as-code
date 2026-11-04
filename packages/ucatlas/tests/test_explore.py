@@ -227,7 +227,7 @@ def test_the_layouts_count_is_every_try_they_make(g, tries):
     assert ended.startswith(f"laying out: {made} done in ")
 
 
-def test_reading_the_sql_counts_each_view_and_file(snap):
+def test_reading_the_sql_counts_each_definition_and_file(snap):
     files = demo.sql_files()
     out = io.StringIO()
     explore.graph(snap.model, snap.catalog, snap.taken_at, snap.lineage, files,
@@ -235,7 +235,7 @@ def test_reading_the_sql_counts_each_view_and_file(snap):
     views = sum(1 for o in snap.model.values() if o["kind"] == "view" and o.get("definition"))
     assert views and files
     started = out.getvalue().splitlines()[0]
-    assert started == f"reading the SQL: {views + len(files)} views and files"
+    assert started == f"reading the SQL: {views + len(files)} definitions and files"
 
 
 @pytest.fixture(scope="module")

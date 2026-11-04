@@ -27,7 +27,7 @@ def test_a_catalogs_schemas_are_all_but_information_schema_in_order():
     assert ws.calls == [(f"{UC}/schemas", {"catalog_name": "ucstate_prod"})]
 
 
-@pytest.mark.parametrize("name", ["shop", "roundtrip", "probe_lineage"])
+@pytest.mark.parametrize("name", ["shop", "roundtrip", "probe_lineage", "kinds"])
 def test_a_read_returns_what_the_workspace_answered(name):
     raw = samples.raw(name)
     ws = SavedWorkspace(raw)

@@ -3,7 +3,8 @@
 `graph` gathers what the page shows from two sources, each kept apart in the
 data so the page can say which one a fact came from:
 
-- the SQL: each view's definition, and the statements in any SQL files given
+- the SQL: each view's, materialized view's, streaming table's and metric
+  view's definition, and the statements in any SQL files given
   (`sqllineage`). It says how each column is computed, and which objects are
   read only to join or filter;
 - what ran: the lineage the platform recorded (`ucmodel.lineage`), with when
@@ -38,6 +39,23 @@ PAGE = "index.html"
 # The libraries the page loads, and their licenses, written beside it so it works offline.
 # The page falls back to jsDelivr for a library that isn't beside it.
 VENDOR = ("d3.min.js", "elk.bundled.js", "THIRD-PARTY-NOTICES.txt")
+
+
+# What the page calls an object the model keeps outside ucstate's management, by the
+# start of the type the platform gives it. Any other (a managed table that isn't Delta,
+# say) is a table.
+KINDS = (("MATERIALIZED_VIEW", "materialized_view"), ("STREAMING_TABLE", "streaming_table"),
+         ("METRIC_VIEW", "metric_view"), ("EXTERNAL", "external_table"),
+         ("FOREIGN", "foreign_table"))
+# kinds that hold data, as a table does: the lineage says when one was last written
+STORED = ("table", "materialized_view", "streaming_table", "external_table", "foreign_table")
+
+
+def node_kind(obj: dict) -> str:
+    """The page's kind for a model object with columns."""
+    if obj["kind"] != "unsupported":
+        return obj["kind"]
+    return next((k for prefix, k in KINDS if obj["type"].startswith(prefix)), "table")
 
 
 def _grain(comment: str) -> str | None:
@@ -94,12 +112,12 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         comment = obj.get("comment") or ""
         meta = obj.get("meta") or {}
         nodes[name] = {
-            "id": name, "kind": obj["kind"], "schema": schema, "name": short,
+            "id": name, "kind": node_kind(obj), "schema": schema, "name": short,
             "comment": comment, "grain": _grain(comment), "tags": obj.get("tags") or {},
             "owner": meta.get("owner"),
             "columns": [{"name": c["name"], "type": c["type"], "comment": c.get("comment"),
                          "nullable": c.get("nullable", True), "tags": c.get("tags") or {}}
-                        for c in obj["columns"]],
+                        for c in obj.get("columns") or []],
             "pk": pk, "fks": fks, "definition": obj.get("definition"), "writers": [],
             "changed": _when(meta.get("updated_at")), "created": _when(meta.get("created_at")),
             "written": None,
@@ -116,6 +134,12 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         if n["kind"] in ("files", "external") and col not in [c["name"] for c in n["columns"]]:
             n["columns"].append({"name": col, "type": "?", "comment": None, "nullable": True,
                                  "tags": {}})
+
+    def known(cid: str) -> bool:
+        """False for a column the snapshot's object doesn't have: one since dropped, or
+        an internal one, such as those of a materialized view's backing table."""
+        tid, col = cid.rsplit(".", 1)
+        return tid not in objects or col in {c["name"] for c in nodes[tid]["columns"]}
 
     sts = sqllineage.statements(model, catalog, sql_files or [], progress)
     column_edges: dict[tuple[str, str, str], dict] = {}
@@ -146,6 +170,8 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
         for ce in column_edges.values():
             by_pair[ce["s"], ce["t"]].append(ce)
         for seen in found.columns:
+            if not (known(seen.source) and known(seen.target)):
+                continue
             column(seen.source)
             column(seen.target)
             when = _seen(seen.seen)
@@ -167,7 +193,7 @@ def graph(model: dict[str, dict], catalog: str, taken_at: datetime,
                     "s": seen.source, "t": seen.target, "via": "lineage", "role": "data",
                     "static": False, "observed": when}
             target = nodes[seen.target]
-            if target["kind"] == "table" and when:
+            if target["kind"] in STORED and when:
                 target["written"] = max(target["written"] or "", when)
 
     joins: dict[tuple[str, str], dict] = {}
@@ -248,6 +274,18 @@ def sql_files(paths: list[Path]) -> list[tuple[str, str]]:
             name = str(f.relative_to(p)) if p.is_dir() else f.name
             out.append((name, f.read_text(encoding="utf-8")))
     return out
+
+
+# each kind in the catalog, as a count says it; tables and views are always said
+SAID = (("table", "tables"), ("view", "views"), ("materialized_view", "materialized views"),
+        ("streaming_table", "streaming tables"), ("metric_view", "metric views"),
+        ("external_table", "external tables"), ("foreign_table", "foreign tables"))
+
+
+def objects_said(c: dict[str, int]) -> str:
+    """`22 tables, 4 views, 1 materialized view`, from `counts`."""
+    return ", ".join(f"{c.get(k, 0)} {many if c.get(k, 0) != 1 else many[:-1]}"
+                     for k, many in SAID if c.get(k) or k in ("table", "view"))
 
 
 def counts(g: dict) -> dict[str, int]:

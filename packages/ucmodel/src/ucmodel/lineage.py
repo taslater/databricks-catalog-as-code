@@ -2,7 +2,8 @@
 
 The lineage API needs no warehouse, and has an edge within minutes of the
 statement that made it (AGENTS.md, Open questions). Table lineage is one
-call per table or view, and column lineage one per column. The API names
+call per object with columns (a table, a view, a materialized view...), and
+column lineage one per column. The API names
 objects in three parts. `read` drops the catalog it reads from, as the model
 does, so a name in the same catalog matches a model key's.
 
@@ -20,6 +21,7 @@ from __future__ import annotations
 
 from dataclasses import astuple, dataclass, field
 
+from .model import tabular
 from .progress import Progress
 from .workspace import Workspace
 
@@ -54,9 +56,8 @@ class Lineage:
 def read(ws: Workspace, catalog: str, model: dict[str, dict],
          progress: Progress | None = None) -> Lineage:
     p = progress or Progress.off()
-    objects = [o for o in model.values() if o["kind"] in ("table", "view")]
-    with p.step("reading table lineage", len(objects), ("table or view", "tables and views")) \
-            as step:
+    objects = [o for o in model.values() if tabular(o)]
+    with p.step("reading table lineage", len(objects), "objects") as step:
         tables = ws.map(lambda o: table_edges(
             catalog, o["name"],
             ws.get(f"{API}/table-lineage", table_name=f"{catalog}.{o['name']}")),

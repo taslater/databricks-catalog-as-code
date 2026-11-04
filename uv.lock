@@ -900,12 +900,14 @@ name = "ucatlas"
 version = "0.1.0"
 source = { editable = "packages/ucatlas" }
 dependencies = [
+    { name = "pyyaml" },
     { name = "sqlglot" },
     { name = "ucmodel" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "pyyaml", specifier = ">=6" },
     { name = "sqlglot", specifier = ">=30.27,<31" },
     { name = "ucmodel", editable = "packages/ucmodel" },
 ]

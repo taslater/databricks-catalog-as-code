@@ -1,6 +1,6 @@
 """`ucmodel.samples.anonymise`: what a saved read keeps and what it loses."""
 
-from ucmodel.samples import anonymise
+from ucmodel.samples import anonymise, scrub
 
 A = "4529DD90-b1ef-4438-bc48-921e76385472"
 B = "5b8e1c2a-7d3f-4a6b-9e0c-1f2a3b4c5d6e"
@@ -32,3 +32,19 @@ def test_it_is_scrub_as_well_and_leaves_other_values_alone():
 def test_anonymising_twice_changes_nothing():
     once = anonymise({"x": [A, B, A]})
     assert anonymise(once) == once
+
+
+def test_a_uuid_with_underscores_keeps_them_and_gets_the_same_placeholder():
+    under = A.replace("-", "_")
+    out = anonymise({"id": A, "backing": f"__materialization_mat_{under}_orders_1"})
+    assert out == {"id": placeholder(1),
+                   "backing": f"__materialization_mat_{placeholder(1).replace('-', '_')}_orders_1"}
+
+
+def test_a_storage_url_anywhere_loses_its_bucket_and_path():
+    props = {"spark.internal.pipelines.backing_table_path": "s3://dbstorage-prod-abc123/uc/x/y",
+             "query": "SELECT * FROM delta.`abfss://c@acct.dfs.core.windows.net/t` LIMIT 1",
+             "plain": "s3 is a service"}
+    assert scrub(props) == {"spark.internal.pipelines.backing_table_path": "s3://storage",
+                            "query": "SELECT * FROM delta.`abfss://storage` LIMIT 1",
+                            "plain": "s3 is a service"}

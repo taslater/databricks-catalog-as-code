@@ -5,7 +5,29 @@ All notable changes are listed here. The format follows
 
 ## Unreleased
 
+### ucmodel
+
+- An object outside the model that has columns (a materialized view, a
+  streaming table, a metric view, an external or foreign table) keeps its
+  columns, its definition and its tags, and its pipeline's id in `meta`.
+  It is still `unsupported`, and `ucstate` still leaves it alone. A diff
+  between a snapshot from 0.1.0 and a later one shows these as changes.
+- Lineage is read for those objects too.
+- `snapshot` names them by type in what it prints ("1 materialized view").
+- `samples.scrub` also replaces cloud storage URLs, which a pipeline's
+  properties hold, and `anonymise` also replaces UUIDs written with
+  underscores. A new sample, `kinds`, has one object of each kind.
+
 ### ucatlas
+
+- The explorer draws materialized views, streaming tables, metric views and
+  external and foreign tables, in every mode and on the map, each with its
+  own icon and name. A materialized view's and a streaming table's lineage
+  comes from their definitions and from what the platform recorded, and
+  says when they were last written. A metric view's measures link to the
+  columns they read, from its YAML, which needs PyYAML.
+- A column edge in the platform's lineage to a column the object doesn't
+  have (a materialized view's backing table's) is left out.
 
 - When Graphviz is missing, the error names the program it needs and how to
   install Graphviz on this platform (Homebrew, winget, apt or dnf), or with

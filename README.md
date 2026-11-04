@@ -161,8 +161,10 @@ uv run ucatlas explore --snapshot snapshots/NEWER.json --sql jobs/ -o explorer
   `--catalog` from the live catalog. See [`docs/diagrams.md`](docs/diagrams.md).
 - `explore` writes one interactive page for the whole snapshot: lineage down
   to the column, from the SQL and from what ran, with declared keys and
-  joins, to explore, compare tables and map the catalog. `--sql` adds the
-  statements that load it. See [`docs/explorer.md`](docs/explorer.md).
+  joins, to explore, compare tables and map the catalog. Materialized views,
+  streaming tables and metric views are drawn too, with their lineage.
+  `--sql` adds the statements that load it. See
+  [`docs/explorer.md`](docs/explorer.md).
 - Each step that takes a while (listing schemas, reading their objects,
   reading table and column lineage, reading the SQL, laying out, drawing)
   writes its progress to stderr. On a terminal that is one line, drawn again

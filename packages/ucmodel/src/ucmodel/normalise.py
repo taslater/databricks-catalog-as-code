@@ -185,20 +185,31 @@ def _table_or_view(catalog: str, schema: str, name: str, t: dict) -> dict:
     props = info.get("properties", {})
     table_type = info.get("table_type")
     base = {"name": f"{schema}.{name}", "comment": _text(info.get("comment"))}
-    meta = _meta(info, "table_id", "owner", "created_at", "updated_at", "updated_by")
-    if table_type not in SUPPORTED_TABLE_TYPES or (
-        table_type in TABLE_TYPES and info.get("data_source_format") != "DELTA"
-    ):
-        return {
-            "kind": "unsupported",
-            **base,
-            "type": f"{table_type} {info.get('data_source_format', '')}".strip(),
-            "meta": meta,
-        }
+    meta = _meta(info, "table_id", "owner", "created_at", "updated_at", "updated_by",
+                 "pipeline_id")
     columns = [
         _column(catalog, c, t["column_tags"].get(c["name"], {}))
         for c in sorted(info.get("columns", []), key=lambda c: c["position"])
     ]
+    if table_type not in SUPPORTED_TABLE_TYPES or (
+        table_type in TABLE_TYPES and info.get("data_source_format") != "DELTA"
+    ):
+        # Outside what ucstate manages (a materialized view, a streaming table, a metric
+        # view, an external or foreign table), but its columns and definition are kept,
+        # for reports and drawings.
+        return {
+            "kind": "unsupported",
+            **base,
+            "type": f"{table_type} {info.get('data_source_format') or ''}".strip(),
+            "columns": [
+                {k: c[k] for k in ("name", "type", "nullable", "comment", "tags")}
+                for c in columns
+            ],
+            "definition": strip_catalog(info.get("view_definition") or "", catalog).strip()
+            or None,
+            "tags": dict(sorted(t["tags"].items())),
+            "meta": meta,
+        }
     common = {
         "properties": properties(props),
         "tags": dict(sorted(t["tags"].items())),
