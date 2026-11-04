@@ -56,7 +56,7 @@ def test_a_catalog_that_isnt_there_is_named(monkeypatch, capsys, tmp_path):
 def test_snapshot_prints_the_path_and_what_it_holds(monkeypatch, capsys, tmp_path):
     taken = make("ucstate_dev", ["shop"], datetime(2026, 11, 1, tzinfo=UTC), samples.model("shop"))
     monkeypatch.setattr(Workspace, "connect", connects_to(NoCatalogs))
-    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, with_lineage, progress: taken)
+    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, **options: taken)
     assert cli.main(["--profile", "p", "snapshot", "--catalog", "ucstate_dev",
                      "-o", f"{tmp_path}/"]) == 0
     out, err = capsys.readouterr()
@@ -125,7 +125,7 @@ def test_a_snapshot_names_what_is_outside_the_model_by_its_type(monkeypatch, cap
     taken = make("ucstate_test", ["kinds"], datetime(2026, 11, 4, tzinfo=UTC),
                  samples.model("kinds"))
     monkeypatch.setattr(Workspace, "connect", connects_to(NoCatalogs))
-    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, with_lineage, progress: taken)
+    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, **options: taken)
     assert cli.main(["--profile", "p", "snapshot", "--catalog", "ucstate_test",
                      "-o", f"{tmp_path}/"]) == 0
     assert capsys.readouterr().err.startswith(

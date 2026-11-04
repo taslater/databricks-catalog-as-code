@@ -36,7 +36,10 @@ def main(argv: list[str] | None = None) -> int:
                         "or two queries with --warehouse")
     p.add_argument("--warehouse", metavar="ID",
                    help="a SQL warehouse, to read tags, grants and lineage for the whole "
-                        "catalog in four queries rather than in calls per object")
+                        "catalog in a few queries rather than in calls per object, and the "
+                        "statements query history says wrote each object")
+    p.add_argument("--no-history", action="store_true",
+                   help="with --warehouse, don't read query history")
 
     p = sub.add_parser("diff", help="report what changed between two snapshots. Exits 1 "
                                     "when anything did")
@@ -68,6 +71,7 @@ def cmd_snapshot(ws: Workspace, args: argparse.Namespace) -> int:
     """Prints the file's path, and what it holds on stderr."""
     start = time.monotonic()
     s = take(ws, args.catalog, args.schema, with_lineage=not args.no_lineage,
+             with_history=not args.no_history,
              progress=Progress.off() if args.quiet else Progress())
     path = write(s, args.out)
     kinds = Counter(_said(key, obj) for key, obj in s.model.items())
@@ -77,6 +81,8 @@ def cmd_snapshot(ws: Workspace, args: argparse.Namespace) -> int:
     else:
         held += (f"; lineage: {len(s.lineage.tables)} table edges, "
                  f"{len(s.lineage.columns)} column edges")
+        if s.lineage.writes is not None:
+            held += f", {len(s.lineage.writes)} statements from query history"
     print(f"{s.describe()}: {held or 'nothing'}, read in {time.monotonic() - start:.1f} s",
           file=sys.stderr)
     print(path)
