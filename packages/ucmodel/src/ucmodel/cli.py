@@ -24,7 +24,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="don't write progress to stderr")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("snapshot", help="read a catalog over REST and write it to a file")
+    p = sub.add_parser("snapshot", help="read a catalog and write it to a file")
     p.add_argument("--catalog", required=True)
     p.add_argument("--schema", action="append",
                    help="a schema to read. Give it once for each (default: every schema but "
@@ -32,7 +32,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("-o", "--out", default="snapshots/",
                    help="the file, or the folder to name one in (default: snapshots/)")
     p.add_argument("--no-lineage", action="store_true",
-                   help="skip lineage, which takes one API call per table and one per column")
+                   help="skip lineage, which takes one API call per table and one per column, "
+                        "or two queries with --warehouse")
+    p.add_argument("--warehouse", metavar="ID",
+                   help="a SQL warehouse, to read tags, grants and lineage for the whole "
+                        "catalog in four queries rather than in calls per object")
 
     p = sub.add_parser("diff", help="report what changed between two snapshots. Exits 1 "
                                     "when anything did")
@@ -44,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "diff":
             return cmd_diff(args)
-        return cmd_snapshot(Workspace.connect(args.profile), args)
+        return cmd_snapshot(Workspace.connect(args.profile, args.warehouse), args)
     except (NoCredentials, SnapshotError) as e:
         print(f"ucmodel: {e}", file=sys.stderr)
         return 2

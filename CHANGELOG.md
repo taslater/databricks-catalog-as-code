@@ -17,6 +17,16 @@ All notable changes are listed here. The format follows
 - `samples.scrub` also replaces cloud storage URLs, which a pipeline's
   properties hold, and `anonymise` also replaces UUIDs written with
   underscores. A new sample, `kinds`, has one object of each kind.
+- `snapshot --warehouse ID` reads tags, grants and functions' names from
+  `system.information_schema`, and lineage from the `system.access` lineage
+  tables: five queries for the whole catalog in place of calls per object.
+  The model is the same as over REST. Lineage keeps the edges the lineage
+  API gives; an edge's time is its latest event, which can be seconds later
+  than the API's. A query that fails (the system tables often need an
+  admin's grant) falls back to REST and says so.
+- A read no longer gets each table again after listing it: a schema's list
+  holds all of a table's state.
+- `Workspace.sql` reads a result that comes in chunks to its end.
 
 ### ucatlas
 

@@ -8,7 +8,7 @@ Three Python packages in one uv workspace, under `packages/`:
 
 | Package | Does |
 | --- | --- |
-| `ucmodel` | Reads a Unity Catalog over REST into a normalised model, compiles source DDL into the same model, and compares two models. Takes snapshots and reports on them (`ucmodel` command). No warehouse needed |
+| `ucmodel` | Reads a Unity Catalog over REST into a normalised model, compiles source DDL into the same model, and compares two models. Takes snapshots and reports on them (`ucmodel` command). No warehouse needed; `snapshot --warehouse` reads tags, grants and lineage in a few queries |
 | `ucstate` | Plans and applies the changes that bring a catalog to its SQL source files (`ucstate` command) |
 | `ucatlas` | Draws a catalog or a snapshot as a static site of ER diagrams and lineage graphs, writes an interactive explorer of a snapshot, and serves a local UI over the commands (`ucatlas` command). Needs Graphviz |
 
@@ -22,8 +22,8 @@ diagrams in `docs/diagrams.md`, and the explorer in `docs/explorer.md`.
 ## Layout
 
 ```text
-packages/ucmodel/src/ucmodel/    workspace, reader, normalise, model, compiler, sqltext, lineage,
-                                 snapshot, report, progress, cli, samples/
+packages/ucmodel/src/ucmodel/    workspace, reader, bulk, normalise, model, compiler, sqltext,
+                                 lineage, snapshot, report, progress, cli, samples/
 packages/ucstate/src/ucstate/    project, intent, choices, render, shadow, plan, state, apply, cli
 packages/ucstate/scenarios/      the planner's test corpus (before/, after/, expect.yml, recorded.json)
 packages/ucstate/examples/       what `ucstate import` writes for ucmodel's samples
