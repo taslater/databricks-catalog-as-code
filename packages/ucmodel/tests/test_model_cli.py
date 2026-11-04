@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from saved import SavedWorkspace
 from ucmodel import cli, samples
 from ucmodel.snapshot import load, make, write
 from ucmodel.workspace import Workspace
@@ -45,13 +46,47 @@ def test_a_catalog_that_isnt_there_is_named(monkeypatch, capsys, tmp_path):
 def test_snapshot_prints_the_path_and_what_it_holds(monkeypatch, capsys, tmp_path):
     taken = make("ucstate_dev", ["shop"], datetime(2026, 11, 1, tzinfo=UTC), samples.model("shop"))
     monkeypatch.setattr(Workspace, "connect", classmethod(lambda cls, profile: NoCatalogs()))
-    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, with_lineage: taken)
+    monkeypatch.setattr(cli, "take", lambda ws, catalog, schemas, with_lineage, progress: taken)
     assert cli.main(["--profile", "p", "snapshot", "--catalog", "ucstate_dev",
                      "-o", f"{tmp_path}/"]) == 0
     out, err = capsys.readouterr()
     assert load(tmp_path / taken.file_name) == taken
     assert out == f"{tmp_path / taken.file_name}\n"
     assert err.startswith(f"{taken.describe()}: 1 schema, 4 tables, 1 view; no lineage, read in ")
+
+
+class Shop(SavedWorkspace):
+    """`ucstate_dev`, with the schema `shop` as the saved sample has it, and no lineage."""
+
+    def __init__(self):
+        super().__init__({**samples.raw("shop"), "catalog": "ucstate_dev"})
+
+    def catalog(self, name):
+        return {"name": name}
+
+    def get(self, path, **query):
+        return {}
+
+
+def test_snapshot_writes_each_step_to_stderr_and_only_the_path_to_stdout(monkeypatch, capsys,
+                                                                        tmp_path):
+    monkeypatch.setattr(Workspace, "connect", classmethod(lambda cls, profile: Shop()))
+    assert cli.main(["--profile", "p", "snapshot", "--catalog", "ucstate_dev", "--schema", "shop",
+                     "-o", f"{tmp_path}/"]) == 0
+    out, err = capsys.readouterr()
+    assert out.count("\n") == 1 and out.startswith(str(tmp_path))
+    started = [line.split(":")[0] for line in err.splitlines()[:-1] if " done in " not in line]
+    assert started == ["listing schemas", "reading tables, views, functions and volumes",
+                       "reading table lineage", "reading column lineage"]
+    assert err.splitlines()[-1].startswith("ucstate_dev at ")
+
+
+def test_quiet_writes_only_what_the_snapshot_holds(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(Workspace, "connect", classmethod(lambda cls, profile: Shop()))
+    assert cli.main(["--profile", "p", "--quiet", "snapshot", "--catalog", "ucstate_dev",
+                     "--schema", "shop", "--no-lineage", "-o", f"{tmp_path}/"]) == 0
+    err = capsys.readouterr().err
+    assert len(err.splitlines()) == 1 and err.startswith("ucstate_dev at ")
 
 
 def test_diff_exits_0_when_nothing_changed_1_when_something_did(tmp_path, capsys):

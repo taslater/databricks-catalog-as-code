@@ -9,6 +9,7 @@ from pathlib import Path
 
 from ucmodel import lineage, reader
 from ucmodel.normalise import normalise
+from ucmodel.progress import Progress
 from ucmodel.snapshot import SnapshotError, load, within
 from ucmodel.workspace import NoCredentials, Workspace
 
@@ -24,6 +25,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ucatlas", description="Diagrams of a Unity Catalog.")
     parser.add_argument("--profile",
                         help="Databricks CLI profile. Without one, DATABRICKS_* variables are used")
+    parser.add_argument("-q", "--quiet", action="store_true",
+                        help="don't write progress to stderr")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("draw", help="draw a catalog's schemas and their lineage as a static site")
@@ -62,6 +65,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="where drawings and previews are kept (default: .ucatlas)")
 
     args = parser.parse_args(argv)
+    args.progress = Progress.off() if args.quiet else Progress()
     try:
         if args.command == "serve":
             from .serve import serve
@@ -79,12 +83,13 @@ def main(argv: list[str] | None = None) -> int:
 def cmd_draw(ws: Workspace, args: argparse.Namespace) -> int:
     if ws.catalog(args.catalog) is None:
         raise NotThere(f"catalog {args.catalog} not found")
-    raw = reader.read(ws, args.catalog, args.schema or reader.schemas(ws, args.catalog))
+    raw = reader.read(ws, args.catalog, args.schema or reader.schemas(ws, args.catalog),
+                      args.progress)
     if missing := [name for name, schema in raw["schemas"].items() if schema is None]:
         raise NotThere(f"schema {', '.join(missing)} not found in {args.catalog}")
     model = normalise(raw)
-    found = None if args.no_lineage else lineage.read(ws, args.catalog, model)
-    return _write(model, args.catalog, args.out, datetime.now(UTC), found)
+    found = None if args.no_lineage else lineage.read(ws, args.catalog, model, args.progress)
+    return _write(model, args.catalog, args.out, datetime.now(UTC), found, args.progress)
 
 
 def cmd_explore(args: argparse.Namespace) -> int:
@@ -94,8 +99,9 @@ def cmd_explore(args: argparse.Namespace) -> int:
     if missing := [str(p) for p in args.sql if not p.exists()]:
         raise NotThere(f"no such file or folder: {', '.join(missing)}")
     files = explore.sql_files(args.sql)
-    g = explore.graph(s.model, s.catalog, s.taken_at, s.lineage, files, snapshot=s.hash[:12])
-    page = explore.write(g, args.out, tries=args.tries)
+    g = explore.graph(s.model, s.catalog, s.taken_at, s.lineage, files, snapshot=s.hash[:12],
+                      progress=args.progress)
+    page = explore.write(g, args.out, tries=args.tries, progress=args.progress)
     c = explore.counts(g)
     gaps = f"; {c['gaps']} statement{'s' if c['gaps'] != 1 else ''} with lineage gaps" \
         if c["gaps"] else ""
@@ -116,12 +122,12 @@ def draw_snapshot(args: argparse.Namespace) -> int:
             raise NotThere(f"schema {', '.join(missing)} not in the snapshot {args.snapshot}")
         model = within(model, args.schema)
     found = None if args.no_lineage else s.lineage
-    return _write(model, s.catalog, args.out, s.taken_at, found)
+    return _write(model, s.catalog, args.out, s.taken_at, found, args.progress)
 
 
 def _write(model: dict, catalog: str, out: Path, when: datetime,
-           found: lineage.Lineage | None) -> int:
-    names = write_site(model, catalog, out, when, found)
+           found: lineage.Lineage | None, progress: Progress) -> int:
+    names = write_site(model, catalog, out, when, found, progress)
     print(f"wrote {len(names)} schema page{'s' if len(names) != 1 else ''} to {out}. "
           "To look at the site:\n"
           f"  python3 -m http.server --bind 127.0.0.1 --directory {out} 8000")

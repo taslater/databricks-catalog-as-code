@@ -2,6 +2,7 @@
 synthetic atlas_demo. Tests that lay out run `dot`, and skip without Graphviz."""
 
 import hashlib
+import io
 import json
 import os
 import re
@@ -14,6 +15,7 @@ import pytest
 
 import demo
 from ucatlas import explore, layout
+from ucmodel.progress import Progress
 
 needs_dot = pytest.mark.skipif(shutil.which("dot") is None, reason="needs Graphviz")
 TESTS = Path(__file__).parent
@@ -144,7 +146,7 @@ def inlined(page: str) -> dict:
 
 
 def test_the_page_inlines_the_graph_and_text_cant_close_its_script(g, tmp_path, monkeypatch):
-    monkeypatch.setattr(layout, "build", lambda nodes, edges, tries=None: {})
+    monkeypatch.setattr(layout, "build", lambda nodes, edges, tries=None, progress=None: {})
     g = json.loads(json.dumps(g))
     node(g, "core.orders")["comment"] = "One row per order </script><b>bold</b>"
     page = explore.write(g, tmp_path).read_text()
@@ -211,6 +213,29 @@ def test_without_graphviz_the_error_says_how_to_get_it(monkeypatch):
     monkeypatch.setattr(shutil, "which", lambda name: None)
     with pytest.raises(layout.LayoutError, match="Graphviz isn't installed"):
         layout.build([{"id": "s.a", "kind": "table", "schema": "s"}], [], tries=1)
+
+
+@pytest.mark.parametrize("tries", [None, 2])
+def test_the_layouts_count_is_every_try_they_make(g, tries):
+    if shutil.which("dot") is None:
+        pytest.skip("needs Graphviz")
+    out = io.StringIO()
+    L = layout.build(g["nodes"], explore.layout_edges(g), tries, Progress(out))
+    started, ended = out.getvalue().splitlines()
+    made = sum(arrangement["tries"] for arrangement in L.values())
+    assert started == f"laying out: {made} tries"
+    assert ended.startswith(f"laying out: {made} done in ")
+
+
+def test_reading_the_sql_counts_each_view_and_file(snap):
+    files = demo.sql_files()
+    out = io.StringIO()
+    explore.graph(snap.model, snap.catalog, snap.taken_at, snap.lineage, files,
+                  progress=Progress(out))
+    views = sum(1 for o in snap.model.values() if o["kind"] == "view" and o.get("definition"))
+    assert views and files
+    started = out.getvalue().splitlines()[0]
+    assert started == f"reading the SQL: {views + len(files)} views and files"
 
 
 @pytest.fixture(scope="module")

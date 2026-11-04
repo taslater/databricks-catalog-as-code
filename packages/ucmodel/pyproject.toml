@@ -1,6 +1,6 @@
 [project]
 name = "ucmodel"
-version = "0.1.0a2"
+version = "0.1.0"
 description = "A Unity Catalog read over REST into a normalised model, and models compared"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -9,7 +9,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Thomas Slater" }]
 keywords = ["databricks", "unity-catalog", "sql", "ddl", "schema-migration"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",

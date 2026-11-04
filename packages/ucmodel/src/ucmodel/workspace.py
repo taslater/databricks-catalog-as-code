@@ -85,9 +85,17 @@ class Workspace:
             if not token:
                 return items
 
-    def map(self, fn: Callable[[T], R], items: Iterable[T]) -> list[R]:
+    def map(self, fn: Callable[[T], R], items: Iterable[T],
+            done: Callable[[T], object] | None = None) -> list[R]:
+        """`fn` of each item, eight at a time, in the items' order. `done` is called with
+        each item as it finishes, on the thread that ran it, for progress."""
+        def run(item: T) -> R:
+            out = fn(item)
+            if done:
+                done(item)
+            return out
         with ThreadPoolExecutor(max_workers=8) as pool:
-            return list(pool.map(fn, items))
+            return list(pool.map(run, items))
 
     # Unity Catalog shorthands ------------------------------------------------
 

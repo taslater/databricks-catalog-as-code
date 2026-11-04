@@ -27,6 +27,7 @@ from pathlib import Path
 from . import lineage, reader
 from .lineage import Lineage
 from .normalise import normalise
+from .progress import Progress
 from .workspace import Workspace
 
 FORMAT = "ucmodel.snapshot/1"
@@ -56,16 +57,17 @@ class Snapshot:
 
 
 def take(ws: Workspace, catalog: str, schemas: list[str] | None = None, *,
-         with_lineage: bool = True, now: datetime | None = None) -> Snapshot:
+         with_lineage: bool = True, now: datetime | None = None,
+         progress: Progress | None = None) -> Snapshot:
     """Read the schemas, or every schema but `information_schema`, over REST."""
     if ws.catalog(catalog) is None:
         raise SnapshotError(f"catalog {catalog} not found")
     names = sorted(schemas or reader.schemas(ws, catalog))
-    raw = reader.read(ws, catalog, names)
+    raw = reader.read(ws, catalog, names, progress)
     if missing := [name for name, schema in raw["schemas"].items() if schema is None]:
         raise SnapshotError(f"schema {', '.join(missing)} not found in {catalog}")
     model = normalise(raw)
-    found = lineage.read(ws, catalog, model) if with_lineage else None
+    found = lineage.read(ws, catalog, model, progress) if with_lineage else None
     return make(catalog, names, now or datetime.now(UTC), model, found)
 
 

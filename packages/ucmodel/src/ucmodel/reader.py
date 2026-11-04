@@ -10,14 +10,32 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
+from .progress import Progress
 from .workspace import UC, Workspace
 
 
-def read(ws: Workspace, catalog: str, schemas: list[str]) -> dict:
-    return {
-        "catalog": catalog,
-        "schemas": {name: read_schema(ws, catalog, name) for name in schemas},
-    }
+def read(ws: Workspace, catalog: str, schemas: list[str],
+         progress: Progress | None = None) -> dict:
+    """Two steps, so the second has a count to show: list each schema's objects, then
+    read every object, from all the schemas at once. Each runs eight calls at a time."""
+    p = progress or Progress.off()
+    with p.step("listing schemas", len(schemas), "schemas") as step:
+        listed = dict(zip(schemas, ws.map(lambda name: _list(ws, catalog, name), schemas,
+                                          done=lambda name: step.tick(detail=name)),
+                          strict=True))
+    work = [(schema, group, item) for schema, s in listed.items() if s
+            for group in ("tables", "functions", "volumes") for item in s.pop(f"_{group}")]
+    with p.step("reading tables, views, functions and volumes", len(work), "objects") as step:
+        def one(job: tuple[str, str, dict]) -> dict:
+            schema, group, item = job
+            full = f"{catalog}.{schema}.{item['name']}"
+            if group == "tables":
+                return _table(ws, full)
+            return _function(ws, full) if group == "functions" else _volume(ws, item)
+        found = ws.map(one, work, done=lambda job: step.tick(detail=job[0]))
+    for (schema, group, item), value in zip(work, found, strict=True):
+        listed[schema][group][item["name"]] = value  # type: ignore[index]
+    return {"catalog": catalog, "schemas": listed}
 
 
 def schemas(ws: Workspace, catalog: str) -> list[str]:
@@ -27,24 +45,26 @@ def schemas(ws: Workspace, catalog: str) -> list[str]:
 
 
 def read_schema(ws: Workspace, catalog: str, schema: str) -> dict | None:
+    return read(ws, catalog, [schema])["schemas"][schema]
+
+
+def _list(ws: Workspace, catalog: str, schema: str) -> dict | None:
+    """A schema's own state, with empty groups for its objects, and what is in each
+    group under `_tables`, `_functions` and `_volumes`, for `read` to fill in."""
     full = f"{catalog}.{schema}"
     info = ws.schema(full)
     if info is None:
         return None
     scope = {"catalog_name": catalog, "schema_name": schema}
-    table_names = [t["name"] for t in ws.list_all(f"{UC}/tables", "tables", **scope)]
-    function_names = [f["name"] for f in ws.list_all(f"{UC}/functions", "functions", **scope)]
-    volumes = ws.list_all(f"{UC}/volumes", "volumes", **scope)
     return {
         "info": info,
         "tags": ws.tags("schemas", full),
         "grants": ws.grants("schema", full),
-        "tables": dict(zip(table_names, ws.map(lambda n: _table(ws, f"{full}.{n}"), table_names),
-                           strict=True)),
-        "functions": dict(zip(function_names,
-                              ws.map(lambda n: _function(ws, f"{full}.{n}"), function_names),
-                              strict=True)),
-        "volumes": {v["name"]: _volume(ws, v) for v in volumes},
+        "tables": {}, "functions": {}, "volumes": {},
+        "_tables": [{"name": t["name"]} for t in ws.list_all(f"{UC}/tables", "tables", **scope)],
+        "_functions": [{"name": f["name"]}
+                       for f in ws.list_all(f"{UC}/functions", "functions", **scope)],
+        "_volumes": ws.list_all(f"{UC}/volumes", "volumes", **scope),
     }
 
 

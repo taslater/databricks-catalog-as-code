@@ -51,7 +51,8 @@ def test_a_catalog_that_isnt_there_is_named(fake, capsys, tmp_path):
 def test_a_schema_that_isnt_there_is_named(fake, capsys, tmp_path):
     args = ["draw", "--catalog", "ucstate_prod", "--schema", "nope", "-o", str(tmp_path)]
     assert cli.main(args) == 2
-    assert capsys.readouterr().err == "ucatlas: schema nope not found in ucstate_prod\n"
+    err = capsys.readouterr().err  # after the steps that ran, the error, on its own line
+    assert err.endswith("\nucatlas: schema nope not found in ucstate_prod\n")
     assert not any(tmp_path.iterdir())
 
 
@@ -132,7 +133,7 @@ def test_explore_without_lineage_says_edges_come_from_sql_only(no_config, capsys
                                                               monkeypatch):
     from ucatlas import layout
 
-    monkeypatch.setattr(layout, "build", lambda nodes, edges, tries=None: {})
+    monkeypatch.setattr(layout, "build", lambda nodes, edges, tries=None, progress=None: {})
     path = demo_snapshot(tmp_path, with_lineage=False)
     assert cli.main(["explore", "--snapshot", str(path), "-o", str(tmp_path / "x")]) == 0
     said = capsys.readouterr().out
@@ -161,4 +162,4 @@ def test_explore_without_graphviz_is_a_short_error(no_config, capsys, tmp_path, 
     monkeypatch.setattr(shutil, "which", lambda name: None)
     path = demo_snapshot(tmp_path)
     assert cli.main(["explore", "--snapshot", str(path), "-o", str(tmp_path / "x")]) == 2
-    assert capsys.readouterr().err.startswith("ucatlas: Graphviz isn't installed")
+    assert capsys.readouterr().err.splitlines()[-1].startswith("ucatlas: Graphviz isn't installed")

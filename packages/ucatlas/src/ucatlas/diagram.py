@@ -30,6 +30,7 @@ from pathlib import Path
 
 from ucmodel.lineage import Lineage
 from ucmodel.model import depends_on
+from ucmodel.progress import Progress
 
 TABLE, VIEW, STUB = "#dbe8f7", "#e3f1dc", "#f2f2f2"
 WIDEST_TYPE = 40  # the characters of a type the drawing shows; the page has it all
@@ -218,22 +219,26 @@ def svg(source: str) -> str:
 
 
 def write_site(model: dict[str, dict], catalog: str, out: Path, when: datetime,
-               lineage: Lineage | None = None) -> list[str]:
+               lineage: Lineage | None = None, progress: Progress | None = None) -> list[str]:
     """Write the site for a model read from `catalog` at `when`. Returns its schemas.
 
     Without `lineage`, the pages have no lineage graph and no column lineage.
     """
     names = schemas(model)
     out.mkdir(parents=True, exist_ok=True)
-    for schema in names:
-        drawings: dict[str, str] = {}
-        sources = {".dot": dot_source(model, schema) if _in(model, schema, DRAWN) else None,
-                   ".lineage.dot": lineage and lineage_source(model, lineage, schema)}
-        for suffix, source in sources.items():
-            if source:
-                (out / _file(schema, suffix)).write_text(source)
-                drawings[suffix] = svg(source)
-        (out / _file(schema)).write_text(_page(model, catalog, schema, names, drawings, lineage))
+    with (progress or Progress.off()).step("drawing schemas", len(names), "schemas") as step:
+        for schema in names:
+            step.tick(0, detail=schema)
+            drawings: dict[str, str] = {}
+            sources = {".dot": dot_source(model, schema) if _in(model, schema, DRAWN) else None,
+                       ".lineage.dot": lineage and lineage_source(model, lineage, schema)}
+            for suffix, source in sources.items():
+                if source:
+                    (out / _file(schema, suffix)).write_text(source)
+                    drawings[suffix] = svg(source)
+            (out / _file(schema)).write_text(_page(model, catalog, schema, names, drawings,
+                                                   lineage))
+            step.tick()
     (out / "index.html").write_text(_index(model, catalog, names, when))
     return names
 

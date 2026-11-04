@@ -39,6 +39,8 @@ from sqlglot.lineage import Node, lineage
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import build_scope
 
+from ucmodel.progress import Progress
+
 logging.getLogger("sqlglot").setLevel(logging.CRITICAL)
 D = "databricks"
 AGGREGATE = re.compile(r"(SUM|COUNT|AVG|MIN|MAX|COUNT_IF|ANY_VALUE|FIRST|LAST)\(", re.I)
@@ -365,30 +367,43 @@ def analyse(via: str, sql: str, model: dict[str, dict], catalog: str, *,
 
 
 def statements(model: dict[str, dict], catalog: str,
-               files: Iterable[tuple[str, str]] = ()) -> list[Statement]:
+               files: Iterable[tuple[str, str]] = (),
+               progress: Progress | None = None) -> list[Statement]:
     """The lineage of every view's definition, and of each statement in `files`,
     (name, text) pairs, that writes an object. A file's `CREATE VIEW` for a view the
     model has is skipped: the definition the catalog holds wins."""
-    from ucmodel.sqltext import split_statements
-
     schema = glot_schema(model)
+    files = list(files)
+    defined = [(name, obj) for name, obj in sorted(objects(model).items())
+               if obj["kind"] == "view" and obj.get("definition")]
     out = []
-    for name, obj in sorted(objects(model).items()):
-        if obj["kind"] == "view" and obj.get("definition"):
+    with (progress or Progress.off()).step("reading the SQL", len(defined) + len(files),
+                                           ("view or file", "views and files")) as step:
+        for name, obj in defined:
             st = analyse(name, obj["definition"], model, catalog, schema=schema, view=name)
             if st:
                 out.append(st)
-    views = {n for n, o in objects(model).items() if o["kind"] == "view"}
-    for fname, text in files:
-        names = _Names(catalog, model)  # a USE lasts to the end of its file
-        try:
-            parts = split_statements(text)
-        except Exception as e:  # noqa: BLE001 - one unreadable file shouldn't stop the rest
-            out.append(Statement(f"{fname}", "unread", None, text[:2000],
-                                 errors=[f"couldn't split it into statements: {e}"]))
-            continue
-        for i, sql in enumerate(parts, 1):
-            st = analyse(f"{fname}:{i}", sql, model, catalog, names=names, schema=schema)
-            if st and not (st.kind == "view" and st.target in views):
-                out.append(st)
+            step.tick(detail=name)
+        views = {n for n, o in objects(model).items() if o["kind"] == "view"}
+        for fname, text in files:
+            out += _file_statements(fname, text, model, catalog, schema, views)
+            step.tick(detail=fname)
+    return out
+
+
+def _file_statements(fname: str, text: str, model: dict[str, dict], catalog: str,
+                     schema: dict, views: set[str]) -> list[Statement]:
+    from ucmodel.sqltext import split_statements
+
+    names = _Names(catalog, model)  # a USE lasts to the end of its file
+    try:
+        parts = split_statements(text)
+    except Exception as e:  # noqa: BLE001 - one unreadable file shouldn't stop the rest
+        return [Statement(f"{fname}", "unread", None, text[:2000],
+                          errors=[f"couldn't split it into statements: {e}"])]
+    out = []
+    for i, sql in enumerate(parts, 1):
+        st = analyse(f"{fname}:{i}", sql, model, catalog, names=names, schema=schema)
+        if st and not (st.kind == "view" and st.target in views):
+            out.append(st)
     return out
