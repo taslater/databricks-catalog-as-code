@@ -57,5 +57,7 @@ only reads. The `ucstate` commands write one entry or one script into the
 project, for review in git. Drawings and previews are kept in `.ucatlas/`,
 by snapshot hash.
 
-It needs Graphviz on the PATH (`dot`, and `neato` for the explorer): `brew install graphviz`, or
-`apt-get install graphviz`. The plan is the repo's [`docs/diagrams.md`](https://github.com/taslater/databricks-catalog-as-code/blob/main/docs/diagrams.md).
+It needs Graphviz (`dot`, and `neato` for the explorer), which pip and uv can't install:
+`brew install graphviz` on macOS, `winget install graphviz` on Windows, `sudo apt-get install
+graphviz` on Debian and Ubuntu, or `conda install -c conda-forge graphviz` anywhere. It's found on
+the PATH or where those installers put it. The plan is the repo's [`docs/diagrams.md`](https://github.com/taslater/databricks-catalog-as-code/blob/main/docs/diagrams.md).

@@ -27,7 +27,7 @@ packages/ucmodel/src/ucmodel/    workspace, reader, normalise, model, compiler, 
 packages/ucstate/src/ucstate/    project, intent, choices, render, shadow, plan, state, apply, cli
 packages/ucstate/scenarios/      the planner's test corpus (before/, after/, expect.yml, recorded.json)
 packages/ucstate/examples/       what `ucstate import` writes for ucmodel's samples
-packages/ucatlas/src/ucatlas/    diagram, serve, sqllineage, explore, layout, explorer/, cli
+packages/ucatlas/src/ucatlas/    diagram, serve, sqllineage, explore, layout, graphviz, explorer/, cli
 packages/ucatlas/src/ucatlas/explorer/  the page, and d3 and elkjs, vendored unmodified
 packages/ucatlas/tests/atlas_demo/  a synthetic catalog, its SQL and lineage, for the explorer
 catalog/                         the sample project the workflows deploy (synthetic)

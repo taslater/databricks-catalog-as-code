@@ -125,7 +125,8 @@ pip install ucatlas    # snapshots, reports, diagrams and the local UI; installs
 pip install ucstate    # the planner and applier; installs ucmodel
 ```
 
-`ucatlas` also needs Graphviz's `dot` on the PATH, to draw.
+`ucatlas` also needs Graphviz, to draw, which pip and uv can't install: `brew install graphviz`,
+`winget install graphviz`, `sudo apt-get install graphviz` or `conda install -c conda-forge graphviz`.
 
 Both need Python 3.11 or later. To work from source:
 

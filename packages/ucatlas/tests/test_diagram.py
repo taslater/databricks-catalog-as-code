@@ -3,6 +3,7 @@
 import copy
 import re
 import shutil
+import sys
 from collections import Counter
 from datetime import UTC, datetime
 from html import escape
@@ -241,6 +242,7 @@ def test_a_drawing_dot_cannot_read_is_an_error():
 
 
 def test_without_graphviz_the_error_says_how_to_install_it(monkeypatch):
-    monkeypatch.setattr(shutil, "which", lambda name: None)
+    monkeypatch.setattr(shutil, "which", lambda *args, **kwargs: None)
+    monkeypatch.setattr(sys, "platform", "darwin")
     with pytest.raises(DiagramError, match="brew install graphviz"):
         svg("digraph {}")

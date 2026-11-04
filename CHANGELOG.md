@@ -3,6 +3,17 @@
 All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### ucatlas
+
+- When Graphviz is missing, the error names the program it needs and how to
+  install Graphviz on this platform (Homebrew, winget, apt or dnf), or with
+  conda anywhere.
+- Graphviz is also looked for where its installers put it, so a PATH
+  without Homebrew's folder (an editor started from the Dock, say) or a
+  Windows install that didn't change the PATH still finds it.
+
 ## 0.1.0
 
 The first release that isn't a pre-release. `ucmodel` and `ucatlas` are
