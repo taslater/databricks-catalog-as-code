@@ -918,12 +918,14 @@ version = "0.1.0"
 source = { editable = "packages/ucmodel" }
 dependencies = [
     { name = "databricks-sdk" },
+    { name = "requests" },
     { name = "sqlglot" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "databricks-sdk", specifier = ">=0.158,<1" },
+    { name = "requests", specifier = ">=2.31,<3" },
     { name = "sqlglot", specifier = ">=30.27,<31" },
 ]
 

@@ -9,11 +9,14 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, TypeVar, cast
 from urllib.parse import quote
 
+import requests
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.errors import NotFound
 from databricks.sdk.errors.base import DatabricksError
 from databricks.sdk.service.sql import (
+    Disposition,
     ExecuteStatementRequestOnWaitTimeout,
+    Format,
     StatementParameterListItem,
     StatementState,
 )
@@ -137,10 +140,28 @@ class Workspace:
         never need quoting into the statement. Raises SqlError if the
         statement does not succeed, including when the API refuses it before
         it runs (parameters over 1 MiB, say).
+
+        A result comes back inline, which the API limits to 25 MiB. A
+        statement that goes over is run again with its result in files the
+        warehouse stores, which have no limit this code meets.
         """
+        try:
+            return self._run(statement, catalog, schema, params, external=False)
+        except SqlError as e:
+            if "Inline byte limit exceeded" not in str(e):
+                raise
+        return self._run(statement, catalog, schema, params, external=True)
+
+    def _run(
+        self, statement: str, catalog: str | None, schema: str | None,
+        params: dict[str, str | None] | None, external: bool,
+    ) -> list[dict]:
         if not self.warehouse_id:
             raise RuntimeError("no SQL warehouse: pass --warehouse, or set DATABRICKS_WAREHOUSE_ID")
         api = self.client.statement_execution
+        more: dict[str, Any] = (
+            {"disposition": Disposition.EXTERNAL_LINKS, "format": Format.JSON_ARRAY}
+            if external else {})
         try:
             r = api.execute_statement(
                 statement=statement,
@@ -151,6 +172,7 @@ class Workspace:
                             for k, v in (params or {}).items()] or None,
                 wait_timeout="50s",
                 on_wait_timeout=ExecuteStatementRequestOnWaitTimeout.CONTINUE,
+                **more,
             )
         except DatabricksError as e:
             raise SqlError(f"{type(e).__name__}: {e}", statement) from e
@@ -164,10 +186,26 @@ class Workspace:
         if not (r.manifest and r.manifest.schema and r.manifest.schema.columns):
             return []
         columns = [c.name for c in r.manifest.schema.columns]
-        rows = list((r.result.data_array or []) if r.result else [])
-        chunk = r.result.next_chunk_index if r.result else None
-        while chunk is not None:  # a big result comes in chunks
-            part = api.get_statement_result_chunk_n(cast(str, r.statement_id), chunk)
-            rows.extend(part.data_array or [])
+        rows: list[list] = []
+        part = r.result
+        while part is not None:  # a big result comes in chunks
+            if external:
+                for link in part.external_links or []:
+                    rows.extend(_download(link))
+            else:
+                rows.extend(part.data_array or [])
             chunk = part.next_chunk_index
+            part = (api.get_statement_result_chunk_n(cast(str, r.statement_id), chunk)
+                    if chunk is not None else None)
         return [dict(zip(columns, row, strict=True)) for row in rows]
+
+
+def _download(link: Any) -> list[list]:
+    """The rows in one file of an external result. The address is signed, so it takes no
+    credentials of ours, only the headers it names."""
+    try:
+        got = requests.get(link.external_link, headers=link.http_headers or {}, timeout=120)
+        got.raise_for_status()
+        return cast(list[list], got.json())
+    except (requests.RequestException, ValueError) as e:
+        raise SqlError(f"a result file could not be read: {type(e).__name__}: {e}") from e

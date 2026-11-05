@@ -3,6 +3,17 @@
 All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### ucmodel
+
+- A statement whose result is over the API's 25 MiB inline limit is run
+  again with the result in external files, and read from them. Before, a
+  big catalog's lineage or query history failed with "Inline byte limit
+  exceeded" and the snapshot fell back to REST or left it out.
+- `requests` is a declared dependency; the code already imported it through
+  the SDK.
+
 ## 0.1.0
 
 The first release that isn't a pre-release. `ucmodel` and `ucatlas` are
