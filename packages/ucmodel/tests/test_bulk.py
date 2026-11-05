@@ -246,6 +246,76 @@ def test_a_result_in_chunks_is_read_to_its_end():
     assert ws.sql("SELECT n") == [{"n": "1"}, {"n": "2"}, {"n": "3"}]
 
 
+def _external_api(first_error: str | None):
+    """A statement API that refuses an inline result with `first_error`, as the real one does
+    over 25 MiB, and serves an external one in two chunks."""
+    from databricks.sdk.service.sql import StatementState
+    seen: list[dict] = []
+
+    def execute(**kw):
+        seen.append(kw)
+        external = "disposition" in kw
+        if not external and first_error:
+            return SimpleNamespace(
+                statement_id="s", manifest=None, result=None,
+                status=SimpleNamespace(state=StatementState.FAILED,
+                                       error=SimpleNamespace(message=first_error)))
+        return SimpleNamespace(
+            statement_id="s", status=SimpleNamespace(state=StatementState.SUCCEEDED),
+            manifest=SimpleNamespace(schema=SimpleNamespace(columns=[SimpleNamespace(name="n")])),
+            result=SimpleNamespace(next_chunk_index=1, data_array=None, external_links=[
+                SimpleNamespace(external_link="u1", http_headers=None)]))
+
+    chunks = {1: SimpleNamespace(next_chunk_index=None, data_array=None, external_links=[
+        SimpleNamespace(external_link="u2", http_headers={"x-ms-blob-type": "b"})])}
+    api = SimpleNamespace(execute_statement=execute,
+                          get_statement_result_chunk_n=lambda statement_id, chunk: chunks[chunk])
+    return api, seen
+
+
+def _serve(monkeypatch, files: dict[str, list]):
+    import requests
+    got: list[tuple[str, dict]] = []
+
+    def get(url, headers, timeout):
+        got.append((url, headers))
+        return SimpleNamespace(raise_for_status=lambda: None, json=lambda: files[url])
+    monkeypatch.setattr(requests, "get", get)
+    return got
+
+
+def test_a_result_over_the_inline_limit_is_read_from_external_files(monkeypatch):
+    message = ("Inline byte limit exceeded. Statements executed with disposition=INLINE can "
+               "have a result size of at most 26214400 bytes.")
+    api, seen = _external_api(message)
+    got = _serve(monkeypatch, {"u1": [["1"], ["2"]], "u2": [["3"], [None]]})
+    ws = Workspace(SimpleNamespace(statement_execution=api), "w")  # type: ignore[arg-type]
+    assert ws.sql("SELECT n") == [{"n": "1"}, {"n": "2"}, {"n": "3"}, {"n": None}]
+    assert len(seen) == 2 and "disposition" not in seen[0]  # inline first, then external
+    assert got == [("u1", {}), ("u2", {"x-ms-blob-type": "b"})]
+
+
+def test_a_failure_that_is_not_the_inline_limit_is_not_run_again():
+    # the known-bad control: another error must raise at once, not retry on external files
+    api, seen = _external_api("[PARSE_SYNTAX_ERROR] nope")
+    ws = Workspace(SimpleNamespace(statement_execution=api), "w")  # type: ignore[arg-type]
+    with pytest.raises(SqlError, match="PARSE_SYNTAX_ERROR"):
+        ws.sql("SELEC n")
+    assert len(seen) == 1
+
+
+def test_an_external_file_that_cannot_be_read_is_a_sql_error(monkeypatch):
+    import requests
+    api, _ = _external_api("Inline byte limit exceeded")
+
+    def get(url, headers, timeout):
+        raise requests.ConnectionError("down")
+    monkeypatch.setattr(requests, "get", get)
+    ws = Workspace(SimpleNamespace(statement_execution=api), "w")  # type: ignore[arg-type]
+    with pytest.raises(SqlError, match="could not be read"):
+        ws.sql("SELECT n")
+
+
 # query history --------------------------------------------------------------------------
 
 def write_row(t: str, sql: str, last: str, runs: int = 1, of: int = 1, **more) -> dict:
